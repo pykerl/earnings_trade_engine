@@ -76,6 +76,22 @@ def test_build_positioning_merges_and_derives(monkeypatch):
     assert df.loc["BAC", "float_turnover"] == 0.05
 
 
+def test_institutional_over_100pct_is_clipped(monkeypatch):
+    def fake_yf(ticker):
+        return {
+            "ticker": ticker, "float_shares": 1e9, "shares_outstanding": 1.1e9,
+            "inst_pct": 1.14, "insider_pct": 0.02, "si_shares": 1e7,
+            "si_pct_float": 0.01, "days_to_cover": 1.0, "avg_vol_10d": 1e7,
+            "retail_pct": float("nan"), "float_turnover": float("nan"),
+            "si_trend": float("nan"), "si_source": "yahoo",
+        }
+
+    monkeypatch.setattr(pos, "fetch_yf_positioning", fake_yf)
+    df = pos.build_positioning(["ECHO"], nasdaq_session=_Session())
+    assert df.loc[0, "inst_pct"] == 1.0
+    assert df.loc[0, "retail_pct"] == 0.0
+
+
 def test_fetch_yf_failure_yields_nan_row(monkeypatch):
     import yfinance
 

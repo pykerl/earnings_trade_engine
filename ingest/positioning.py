@@ -136,6 +136,11 @@ def build_positioning(tickers: list[str], nasdaq_session=None) -> pd.DataFrame:
         df.loc[i, "si_source"] = "nasdaq"
     log.info("positioning: %d names (%d with official Nasdaq SI)", len(df), hits)
 
+    # Yahoo occasionally reports institutional holdings > 100% of shares
+    # (held-shares vs float mismatch on their side); clip so the ownership
+    # split stays a sane proportion.
+    df["inst_pct"] = df["inst_pct"].clip(upper=1.0)
+    df["insider_pct"] = df["insider_pct"].clip(upper=1.0)
     df["retail_pct"] = (1.0 - df["inst_pct"].fillna(0) - df["insider_pct"].fillna(0)).clip(0, 1)
     df.loc[df["inst_pct"].isna(), "retail_pct"] = float("nan")
     df["float_turnover"] = df["avg_vol_10d"] / df["float_shares"]

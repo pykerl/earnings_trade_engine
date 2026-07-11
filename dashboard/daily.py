@@ -275,7 +275,19 @@ def _squeeze_card(r) -> str:
             f"(the max loss) · max gain unlimited</div>"
         )
     elif r.structure == "no affordable call":
-        money = '<div class=money class=muted>No listed call fits the $250 budget.</div>'
+        money = '<div class=money>No listed call fits the $250 budget.</div>'
+    if r.structure == "long call":
+        when = (
+            f"📅 Place this order on <strong>{_fmt_day(r.entry_by)}</strong> "
+            f"(any time before the 4pm ET close)"
+        )
+    else:
+        when = (
+            f"⏳ Options not priced yet (reports beyond the 10-trading-day chain window) — "
+            f"entry window closes <strong>{_fmt_day(r.entry_by)}</strong>"
+            if r.structure == "watch only"
+            else f"Entry window closes <strong>{_fmt_day(r.entry_by)}</strong>"
+        )
     src = {"nasdaq": "official Nasdaq settlement", "yahoo": "Yahoo estimate", "none": "no data"}
     return f"""
 <div class=card>
@@ -288,8 +300,7 @@ def _squeeze_card(r) -> str:
   <div class=srow>Days to cover: <strong>{r.days_to_cover:.1f}</strong>
       · SI trend: {_trend_arrow(r.si_trend)}
       · float turnover: <strong>{100 * r.float_turnover:.1f}%/day</strong></div>
-  <div class=when>📅 Place this order on <strong>{_fmt_day(r.entry_by)}</strong>
-      (any time before the 4pm ET close)</div>
+  <div class=when>{when}</div>
   {ticket}{money}
   <details><summary>Why this trade?</summary><p>{html.escape(squeeze_why(r))}</p></details>
 </div>"""
