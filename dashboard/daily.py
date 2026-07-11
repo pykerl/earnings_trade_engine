@@ -220,13 +220,207 @@ HEADERS = (
     "<th>Spread / edge</th><th>Conf</th><th>n</th><th>Flags</th></tr>"
 )
 
+
+# ------------------------------------------------------- tab 2: squeeze watch
+def _meter(value: float, lo: float = 0.0, hi: float = 100.0) -> str:
+    if value is None or not np.isfinite(value):
+        return '<span class=muted>—</span>'
+    pct = max(0.0, min(1.0, (value - lo) / (hi - lo))) * 100
+    return (
+        f'<span class=meter aria-hidden=true><span class=meterfill '
+        f'style="width:{pct:.0f}%"></span></span>'
+    )
+
+
+def _trend_arrow(t: float) -> str:
+    if t is None or not np.isfinite(t):
+        return "—"
+    if t > 0.02:
+        return f"▲ +{100 * t:.0f}%"
+    if t < -0.02:
+        return f"▼ {100 * t:.0f}%"
+    return f"≈ {100 * t:+.0f}%"
+
+
+def squeeze_why(r) -> str:
+    dtc = f"{r.days_to_cover:.1f}" if np.isfinite(r.days_to_cover) else "?"
+    trend = (
+        "and shorts were still adding at the last settlement"
+        if np.isfinite(r.si_trend) and r.si_trend > 0.02
+        else "though shorts have started covering"
+        if np.isfinite(r.si_trend) and r.si_trend < -0.02
+        else "with short interest roughly flat"
+    )
+    turn = f"{100 * r.float_turnover:.0f}%" if np.isfinite(r.float_turnover) else "?"
+    return (
+        f"{100 * r.si_pct_float:.0f}% of {r.ticker}'s float is sold short and would take "
+        f"about {dtc} days of normal volume to buy back, {trend}. {turn} of the float "
+        f"already trades hands daily, so forced short covering after a positive surprise "
+        f"has to chase a fast-moving stock. This is a lottery ticket, not an edge trade: "
+        f"the call can easily expire worthless and lose 100% of its cost — which is why "
+        f"it is capped at ${config.SQUEEZE_MAX_COST:.0f} and kept out of the main risk budget."
+    )
+
+
+def _squeeze_card(r) -> str:
+    ticket = ""
+    money = ""
+    if r.structure == "long call":
+        ticket = (
+            f'<ul class=ticket><li>BUY 1 × {html.escape(str(r.ticker))}  '
+            f"${r.strike:g} CALL  exp {_fmt_day(r.expiry)}</li></ul>"
+        )
+        money = (
+            f"<div class=money>Costs ≈ <strong>${r.entry_price:,.0f}</strong> "
+            f"(the max loss) · max gain unlimited</div>"
+        )
+    elif r.structure == "no affordable call":
+        money = '<div class=money class=muted>No listed call fits the $250 budget.</div>'
+    src = {"nasdaq": "official Nasdaq settlement", "yahoo": "Yahoo estimate", "none": "no data"}
+    return f"""
+<div class=card>
+  <div class=cardhead><span class=tkbig>{html.escape(str(r.ticker))}</span>
+    <span class=verb>squeeze score {r.squeeze_score:.0f}/100</span></div>
+  <div class=muted>{html.escape(str(r.name or ''))} · reports {_fmt_day(r.earnings_date)}
+      {SESSION_PHRASE.get(r.session, '')}</div>
+  <div class=srow>Short interest: <strong>{100 * r.si_pct_float:.1f}% of float</strong>
+      <span class=muted>({src.get(r.si_source, r.si_source)})</span> {_meter(100 * r.si_pct_float, 0, 30)}</div>
+  <div class=srow>Days to cover: <strong>{r.days_to_cover:.1f}</strong>
+      · SI trend: {_trend_arrow(r.si_trend)}
+      · float turnover: <strong>{100 * r.float_turnover:.1f}%/day</strong></div>
+  <div class=when>📅 Place this order on <strong>{_fmt_day(r.entry_by)}</strong>
+      (any time before the 4pm ET close)</div>
+  {ticket}{money}
+  <details><summary>Why this trade?</summary><p>{html.escape(squeeze_why(r))}</p></details>
+</div>"""
+
+
+def render_squeeze_section(squeeze: pd.DataFrame | None) -> str:
+    intro = (
+        "<h2>Squeeze watch — crowded shorts into earnings</h2>"
+        "<p class=muted>Names whose short positioning makes the upside tail fat: heavily "
+        "shorted, slow to cover, fast-moving float. Long calls only, ≤ $250 each, outside "
+        "the main risk budget. These same names are barred from premium-selling on the "
+        "Trade plan tab — squeeze setups are how iron-fly sellers get hurt.</p>"
+    )
+    if squeeze is None or squeeze.empty:
+        return intro + "<p class=muted>No positioning data yet — run the pipeline.</p>"
+    cands = squeeze[squeeze["candidate"]]
+    cards = "".join(_squeeze_card(r) for r in cands.itertuples(index=False)) or (
+        "<p class=muted>No candidates today — nothing crosses the "
+        f"{config.SQUEEZE_MIN_SI:.0%}-of-float / score-{config.SQUEEZE_SCORE_MIN:.0f} bar. "
+        "That is the default state.</p>"
+    )
+    rows = "".join(
+        f"<tr><td class=tk><strong>{html.escape(str(r.ticker))}</strong></td>"
+        f"<td data-v={r.squeeze_score:.1f} class=num>{r.squeeze_score:.0f} {_meter(r.squeeze_score)}</td>"
+        f"<td data-v={_sv(100 * r.si_pct_float)} class=num>{_pct(r.si_pct_float)}</td>"
+        f"<td data-v={_sv(r.days_to_cover)} class=num>{r.days_to_cover:.1f}</td>"
+        f"<td data-v={_sv(100 * r.float_turnover)} class=num>{_pct(r.float_turnover)}</td>"
+        f"<td data-v={_sv(100 * r.si_trend)} class=num>{_trend_arrow(r.si_trend)}</td>"
+        f"<td>{r.earnings_date} <span class=muted>{html.escape(str(r.session))}</span></td>"
+        f"<td>{html.escape(str(r.structure))}</td></tr>"
+        for r in squeeze.head(25).itertuples(index=False)
+    )
+    table = (
+        '<h3>Watch list (top 25 by score)</h3><div class=tablewrap><table class=sortable>'
+        "<tr><th>Ticker</th><th data-s=1>Score</th><th data-s=1>SI % float</th>"
+        "<th data-s=1>Days to cover</th><th data-s=1>Float turnover</th><th data-s=1>SI trend</th>"
+        "<th>Earnings</th><th>Structure</th></tr>"
+        f"{rows}</table></div>"
+    )
+    return intro + f"<div class=cards>{cards}</div>" + table
+
+
+# ------------------------------------------------------- tab 3: positioning
+def _sv(v) -> str:
+    return f"{v:.2f}" if v is not None and np.isfinite(v) else "-999"
+
+
+def render_positioning_section(squeeze: pd.DataFrame | None) -> str:
+    positioning = squeeze  # the squeeze frame carries events + positioning + score
+    intro = (
+        "<h2>Positioning — Main St vs Wall St, and how fast each name can move</h2>"
+        "<p class=muted>Ownership split (institutional vs the retail remainder — a proxy; "
+        "true retail flow isn't published free), short crowding, and float velocity "
+        "(average daily volume as a share of the float). Click a column header to sort.</p>"
+    )
+    if positioning is None or positioning.empty:
+        return intro + "<p class=muted>No positioning data yet — run the pipeline.</p>"
+    df = positioning.sort_values("squeeze_score", ascending=False)
+    rows = "".join(
+        f"<tr><td class=tk><strong>{html.escape(str(r.ticker))}</strong>"
+        f"<div class=muted>{html.escape(str(r.name or ''))}</div></td>"
+        f"<td>{r.earnings_date} <span class=muted>{html.escape(str(r.session))}</span></td>"
+        f"<td data-v={_sv(r.float_shares / 1e6 if np.isfinite(r.float_shares) else None)} class=num>"
+        f"{r.float_shares / 1e6:,.0f}M</td>"
+        f"<td data-v={_sv(100 * r.float_turnover)} class=num>{_pct(r.float_turnover)} {_meter(100 * r.float_turnover, 0, 5)}</td>"
+        f"<td data-v={_sv(100 * r.inst_pct)} class=num>{_pct(r.inst_pct, 0)} {_meter(100 * r.inst_pct)}</td>"
+        f"<td data-v={_sv(100 * r.retail_pct)} class=num>{_pct(r.retail_pct, 0)} {_meter(100 * r.retail_pct)}</td>"
+        f"<td data-v={_sv(100 * r.si_pct_float)} class=num>{_pct(r.si_pct_float)} {_meter(100 * r.si_pct_float, 0, 30)}</td>"
+        f"<td data-v={_sv(r.days_to_cover)} class=num>{r.days_to_cover:.1f}</td>"
+        f"<td data-v={_sv(100 * r.si_trend)} class=num>{_trend_arrow(r.si_trend)}</td>"
+        f"<td data-v={r.squeeze_score:.1f} class=num><strong>{r.squeeze_score:.0f}</strong> {_meter(r.squeeze_score)}</td>"
+        "</tr>"
+        for r in df.itertuples(index=False)
+        if np.isfinite(r.float_shares)
+    )
+    return intro + (
+        '<div class=tablewrap><table class=sortable>'
+        "<tr><th>Ticker</th><th>Earnings</th><th data-s=1>Float</th>"
+        "<th data-s=1>Vol / float (day)</th><th data-s=1>Wall St %</th><th data-s=1>Main St %</th>"
+        "<th data-s=1>Short % float</th><th data-s=1>Days to cover</th><th data-s=1>SI trend</th>"
+        "<th data-s=1>Squeeze score</th></tr>"
+        f"{rows}</table></div>"
+    )
+
+
+TABS_JS = """
+document.querySelectorAll('.tabbar button').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.tabbar button').forEach(function (b) {
+      b.classList.toggle('active', b === btn);
+      b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+    });
+    document.querySelectorAll('.tabpane').forEach(function (p) {
+      p.hidden = p.id !== btn.dataset.tab;
+    });
+    if (history.replaceState) history.replaceState(null, '', '#' + btn.dataset.tab);
+  });
+});
+if (location.hash) {
+  var target = document.querySelector('.tabbar button[data-tab="' + location.hash.slice(1) + '"]');
+  if (target) target.click();
+}
+document.querySelectorAll('table.sortable th[data-s]').forEach(function (th) {
+  th.addEventListener('click', function () {
+    var table = th.closest('table');
+    var idx = Array.prototype.indexOf.call(th.parentNode.children, th);
+    var rows = Array.prototype.slice.call(table.querySelectorAll('tr')).slice(1);
+    var dir = th.dataset.dir === 'desc' ? 1 : -1;
+    th.dataset.dir = dir === 1 ? 'asc' : 'desc';
+    rows.sort(function (a, b) {
+      var av = parseFloat(a.children[idx].dataset.v || 'NaN');
+      var bv = parseFloat(b.children[idx].dataset.v || 'NaN');
+      if (isNaN(av) && isNaN(bv)) return 0;
+      if (isNaN(av)) return 1;
+      if (isNaN(bv)) return -1;
+      return dir * (av - bv);
+    });
+    rows.forEach(function (r) { table.appendChild(r); });
+  });
+});
+"""
+
 CSS = """
 :root { --ink:#1a1d21; --muted:#697077; --line:#e0e3e7; --bg:#ffffff; --card:#f6f7f8;
         /* chart palette — validated (dataviz six checks) against --card surfaces */
-        --c1:#2a78d6; --cgood:#0ca30c; --cbad:#d03b3b; --cimp:#4a3aa7; --cfair:#eb6834; }
+        --c1:#2a78d6; --cgood:#0ca30c; --cbad:#d03b3b; --cimp:#4a3aa7; --cfair:#eb6834;
+        --c1track:#cde2fb; }
 @media (prefers-color-scheme: dark) {
   :root { --ink:#e6e8ea; --muted:#9aa1a9; --line:#33383e; --bg:#17191c; --card:#212429;
-          --c1:#3987e5; --cgood:#0ca30c; --cbad:#e66767; --cimp:#9085e9; --cfair:#d95926; }
+          --c1:#3987e5; --cgood:#0ca30c; --cbad:#e66767; --cimp:#9085e9; --cfair:#d95926;
+          --c1track:#0d366b; }
 }
 * { box-sizing: border-box; }
 body { margin:2rem auto; max-width:1200px; padding:0 1rem; background:var(--bg);
@@ -264,6 +458,17 @@ td.tk { white-space:nowrap; }
 .money { margin:.3rem 0 .5rem; }
 details summary { cursor:pointer; color:var(--muted); font-weight:600; margin-top:.2rem; }
 details p { margin:.5rem 0 0; }
+.tabbar { display:flex; gap:.4rem; margin:1.1rem 0 1.3rem; border-bottom:2px solid var(--line); }
+.tabbar button { background:none; border:none; border-bottom:3px solid transparent;
+                 margin-bottom:-2px; padding:.55rem .9rem; font:inherit; font-weight:600;
+                 color:var(--muted); cursor:pointer; }
+.tabbar button.active { color:var(--ink); border-bottom-color:var(--c1); }
+.tabbar button:hover { color:var(--ink); }
+.meter { display:inline-block; width:56px; height:8px; border-radius:4px;
+         background:var(--c1track); vertical-align:middle; margin-left:.4rem; }
+.meterfill { display:block; height:100%; border-radius:4px; background:var(--c1); }
+.srow { margin:.3rem 0; }
+table.sortable th[data-s] { cursor:pointer; text-decoration:underline dotted; }
 """ + charts.CHART_CSS
 
 
@@ -273,6 +478,7 @@ def render_html(
     banner: str = "",
     plan: pd.DataFrame | None = None,
     moves: pd.DataFrame | None = None,
+    squeeze: pd.DataFrame | None = None,
 ) -> str:
     live = scored[~scored["screened"]]
     killed = scored[scored["screened"]]
@@ -290,6 +496,7 @@ def render_html(
     banner_html = f'<div class=banner>{html.escape(banner)}</div>' if banner else ""
     live_rows = "".join(_row_html(r) for r in live.itertuples(index=False))
     killed_rows = "".join(_row_html(r) for r in killed.itertuples(index=False))
+    n_cand = int(squeeze["candidate"].sum()) if squeeze is not None and len(squeeze) else 0
     return f"""<!doctype html>
 <html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
@@ -297,13 +504,27 @@ def render_html(
 <h1>Earnings edge dashboard</h1>
 <p class=sub>{run_date} · free-data v1 · paper only · edge = (implied − fair) / fair</p>
 {banner_html}
+<div class=tabbar role=tablist>
+  <button class=active role=tab aria-selected=true data-tab=plan>Trade plan</button>
+  <button role=tab aria-selected=false data-tab=squeeze>Squeeze watch{f' ({n_cand})' if n_cand else ''}</button>
+  <button role=tab aria-selected=false data-tab=positioning>Positioning</button>
+</div>
+<section class=tabpane id=plan>
 <div class=tiles>{tiles}</div>
 {render_plan_section(plan, moves=moves)}
 <h2>Ranked (passing liquidity screen)</h2>
 <div class=tablewrap><table>{HEADERS}{live_rows or '<tr><td colspan=12>none</td></tr>'}</table></div>
 <h2>Screened out (spread &gt; {config.MAX_SPREAD_PCT:.0%} of straddle, OI &lt; {config.MIN_OPEN_INTEREST}, or dead quotes)</h2>
 <div class=tablewrap><table>{HEADERS}{killed_rows or '<tr><td colspan=12>none</td></tr>'}</table></div>
+</section>
+<section class=tabpane id=squeeze hidden>
+{render_squeeze_section(squeeze)}
+</section>
+<section class=tabpane id=positioning hidden>
+{render_positioning_section(squeeze)}
+</section>
 <script>{charts.CHART_JS}</script>
+<script>{TABS_JS}</script>
 </body></html>
 """
 
@@ -315,6 +536,7 @@ def run(
     banner: str = "",
     plan: pd.DataFrame | None = None,
     moves: pd.DataFrame | None = None,
+    squeeze: pd.DataFrame | None = None,
 ) -> tuple:
     config.ensure_dirs()
     run_date = run_date or date.today()
@@ -324,10 +546,14 @@ def run(
         scored = pd.read_parquet(config.SCORED_PARQUET)
     if moves is None and plan is not None and len(plan) and config.MOVES_PARQUET.exists():
         moves = pd.read_parquet(config.MOVES_PARQUET)
+    if squeeze is None and config.SQUEEZE_PARQUET.exists():
+        squeeze = pd.read_parquet(config.SQUEEZE_PARQUET)
 
     html_path = out_dir / f"daily_{run_date}.html"
     csv_path = out_dir / f"daily_{run_date}.csv"
-    html_path.write_text(render_html(scored, run_date, banner=banner, plan=plan, moves=moves))
+    html_path.write_text(
+        render_html(scored, run_date, banner=banner, plan=plan, moves=moves, squeeze=squeeze)
+    )
     cols = [c for c in CSV_COLUMNS if c in scored.columns]
     scored[cols].to_csv(csv_path, index=False)
     if plan is not None and len(plan):

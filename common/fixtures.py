@@ -169,6 +169,32 @@ def generate_all(today: date, seed: int = 20260711) -> None:
 
     pd.DataFrame(chain_rows).to_parquet(config.CHAINS_PARQUET, index=False)
     pd.concat(ladder_frames, ignore_index=True).to_parquet(LADDER_PARQUET, index=False)
+
+    # ---- positioning: a few crowded shorts so the squeeze tab exercises ------
+    floats = rng.uniform(50e6, 5e9, N_NAMES)
+    si_pct = rng.uniform(0.005, 0.04, N_NAMES)
+    si_pct[::6] = rng.uniform(0.09, 0.28, len(si_pct[::6]))  # crowded shorts
+    inst = rng.uniform(0.35, 0.92, N_NAMES)
+    insider = rng.uniform(0.0, 0.12, N_NAMES)
+    avg_vol = floats * rng.uniform(0.004, 0.05, N_NAMES)
+    positioning = pd.DataFrame(
+        {
+            "ticker": tickers,
+            "float_shares": floats,
+            "shares_outstanding": floats * 1.05,
+            "inst_pct": inst,
+            "insider_pct": insider,
+            "retail_pct": (1 - inst - insider).clip(0, 1),
+            "si_shares": floats * si_pct,
+            "si_pct_float": si_pct,
+            "days_to_cover": (floats * si_pct) / avg_vol,
+            "avg_vol_10d": avg_vol,
+            "float_turnover": avg_vol / floats,
+            "si_trend": rng.normal(0.0, 0.15, N_NAMES),
+            "si_source": ["nasdaq" if i % 2 else "yahoo" for i in range(N_NAMES)],
+        }
+    )
+    positioning.to_parquet(config.POSITIONING_PARQUET, index=False)
     log.info(
         "fixtures: %d names, %d price rows, %d history events, %d upcoming, %d chains",
         N_NAMES, len(prices), len(history), len(events), len(chain_rows),

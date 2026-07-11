@@ -184,11 +184,20 @@ def map_structure(row: pd.Series, ladder: pd.DataFrame) -> dict:
 
 # -------------------------------------------------------------------- score --
 def score_events(
-    chains: pd.DataFrame, fair: pd.DataFrame, events: pd.DataFrame, ladders: pd.DataFrame
+    chains: pd.DataFrame,
+    fair: pd.DataFrame,
+    events: pd.DataFrame,
+    ladders: pd.DataFrame,
+    positioning: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     df = chains.merge(fair, on="ticker", how="inner").merge(
         events[["ticker", "source_agreement", "name", "sector"]], on="ticker", how="left"
     )
+    if positioning is not None and len(positioning):
+        df = df.merge(positioning[["ticker", "si_pct_float"]], on="ticker", how="left")
+    if "si_pct_float" not in df.columns:
+        df["si_pct_float"] = np.nan
+    df["squeeze_risk"] = df["si_pct_float"] >= config.SQUEEZE_RISK_SI
     if df.empty:
         log.warning("nothing to score (no chains matched fair estimates)")
         return df
@@ -241,6 +250,10 @@ def score_events(
                 (f"thin history (n={r.n_events})", r.n_events < config.MIN_HISTORY_QUARTERS),
                 ("low-conf moves", r.low_conf_share > 0.25),
                 ("wide market", config.SOFT_SPREAD_PCT < r.spread_pct <= config.MAX_SPREAD_PCT),
+                (
+                    f"squeeze risk ({100 * r.si_pct_float:.0f}% of float short — no short premium)",
+                    bool(r.squeeze_risk),
+                ),
             ] if on
         )
         for r in df.itertuples(index=False)
@@ -257,7 +270,12 @@ def run(today: date | None = None) -> pd.DataFrame:
     fair = pd.read_parquet(config.FAIR_PARQUET)
     events = pd.read_parquet(config.EVENTS_PARQUET)
     ladders = pd.read_parquet(LADDER_PARQUET)
-    scored = score_events(chains, fair, events, ladders)
+    positioning = (
+        pd.read_parquet(config.POSITIONING_PARQUET)
+        if config.POSITIONING_PARQUET.exists()
+        else None
+    )
+    scored = score_events(chains, fair, events, ladders, positioning=positioning)
     scored.to_parquet(config.SCORED_PARQUET, index=False)
     n_live = int((~scored["screened"]).sum()) if len(scored) else 0
     log.info("scored %d events (%d pass liquidity screen) -> %s",

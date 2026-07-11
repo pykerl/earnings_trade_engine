@@ -62,14 +62,24 @@ def _clean(value):
     return value
 
 
+SQUEEZE_FIELDS = [
+    "registered_at", "ticker", "earnings_date", "session", "expiry", "spot",
+    "squeeze_score", "si_pct_float", "days_to_cover", "float_turnover",
+    "si_trend", "si_source", "implied_move_mid", "structure", "detail",
+    "entry_side", "entry_price", "max_loss", "strike", "entry_by",
+]
+
+
 def register(
     scored: pd.DataFrame,
     today: date | None = None,
     path: Path | None = None,
+    fields: list[str] | None = None,
 ) -> pd.DataFrame:
     """Append frozen rows for not-yet-reported, not-yet-registered events."""
     today = today or date.today()
     path = path or config.PREDICTIONS_CSV
+    fields = fields or FIELDS
     path.parent.mkdir(parents=True, exist_ok=True)
 
     seen = existing_keys(path)
@@ -83,7 +93,7 @@ def register(
         key = (str(r.ticker), ev_date.isoformat())
         if key in seen:
             continue  # frozen: first registration wins, forever
-        row = {f: _clean(getattr(r, f, "")) for f in FIELDS}
+        row = {f: _clean(getattr(r, f, "")) for f in fields}
         row["registered_at"] = now
         row["earnings_date"] = ev_date.isoformat()
         new_rows.append(row)
@@ -92,12 +102,12 @@ def register(
     if new_rows:
         write_header = not path.exists()
         with path.open("a", newline="") as fh:
-            writer = csv.DictWriter(fh, fieldnames=FIELDS)
+            writer = csv.DictWriter(fh, fieldnames=fields)
             if write_header:
                 writer.writeheader()
             writer.writerows(new_rows)
     log.info("pre-registered %d new events -> %s", len(new_rows), path)
-    return pd.DataFrame(new_rows, columns=FIELDS)
+    return pd.DataFrame(new_rows, columns=fields)
 
 
 if __name__ == "__main__":

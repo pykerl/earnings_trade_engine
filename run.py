@@ -37,7 +37,7 @@ def _stale(path: Path, max_age_hours: float) -> bool:
 
 def ingest_real(today: date, refresh_all: bool) -> None:
     from ingest import calendar as cal
-    from ingest import chains, earnings_history, prices
+    from ingest import chains, earnings_history, positioning, prices
 
     if refresh_all or _stale(config.PRICES_PARQUET, PRICES_MAX_AGE_DAYS * 24):
         prices.run()
@@ -49,6 +49,11 @@ def ingest_real(today: date, refresh_all: bool) -> None:
         earnings_history.run(today=today)
     else:
         log.info("calendar fresh (< %dh); skipping", CALENDAR_MAX_AGE_HOURS)
+
+    if refresh_all or _stale(config.POSITIONING_PARQUET, CALENDAR_MAX_AGE_HOURS):
+        positioning.run()
+    else:
+        log.info("positioning fresh (< %dh); skipping", CALENDAR_MAX_AGE_HOURS)
 
     chains.run(today=today)  # always refreshed: this is the daily signal
 
@@ -75,17 +80,29 @@ def cmd_daily(args) -> int:
     fair_move.run()
     scored = rank.run()
 
+    from scoring import squeeze as squeeze_mod
     from scoring.size import build_trade_plan
 
+    squeeze = squeeze_mod.run(today=today)
     plan = build_trade_plan(scored, today=today)
 
     banner = FIXTURE_BANNER if args.fixtures else ""
     html_path, csv_path = dashboard_daily.run(
-        scored=scored, run_date=today, banner=banner, plan=plan
+        scored=scored, run_date=today, banner=banner, plan=plan, squeeze=squeeze
     )
 
     pred_path = (config.DATA_DIR / "demo" / "predictions_demo.csv") if args.fixtures else None
     new_rows = predictions.register(scored, today=today, path=pred_path)
+
+    sq_candidates = squeeze[squeeze["candidate"]] if len(squeeze) else squeeze
+    sq_path = (
+        (config.DATA_DIR / "demo" / "squeeze_predictions_demo.csv")
+        if args.fixtures
+        else config.SQUEEZE_PREDICTIONS_CSV
+    )
+    new_sq = predictions.register(
+        sq_candidates, today=today, path=sq_path, fields=predictions.SQUEEZE_FIELDS
+    ) if len(sq_candidates) else sq_candidates
 
     published = False
     if not args.fixtures:  # never publish synthetic output
@@ -100,6 +117,8 @@ def cmd_daily(args) -> int:
         f"  events scored : {len(scored)} ({n_live} pass liquidity screen)\n"
         f"  trade plan    : {len(plan)} positions, "
         f"${plan['position_risk'].sum() if len(plan) else 0:,.0f} at risk\n"
+        f"  squeeze watch : {int(squeeze['candidate'].sum()) if len(squeeze) else 0} candidates "
+        f"({len(new_sq)} newly pre-registered)\n"
         f"  dashboard     : {html_path}\n"
         f"  csv           : {csv_path}\n"
         f"  new pre-regs  : {len(new_rows)} -> "

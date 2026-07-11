@@ -53,6 +53,11 @@ def build_trade_plan(
         & scored["structure"].isin(ACTIONABLE)
         & (pd.to_datetime(scored["entry_by"]).dt.date >= next_session)
     ].copy()
+    if "squeeze_risk" in cand.columns:
+        risky_credit = (cand["entry_side"] == "credit") & cand["squeeze_risk"].fillna(False)
+        for t in cand.loc[risky_credit, "ticker"]:
+            log.info("plan: %s excluded — heavily shorted, no short premium on squeeze setups", t)
+        cand = cand[~risky_credit]
     if cand.empty:
         return pd.DataFrame()
 

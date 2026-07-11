@@ -58,6 +58,15 @@ PAPER_ACCOUNT = 10_000.0          # $10k paper account (plan §3 block 4)
 RISK_BUDGET_PCT = 0.25            # total max-loss committed at once <= 25% of account
 PER_NAME_RISK_CAP = 500.0         # max-loss per underlying (2 contracts at $250)
 
+# ---- positioning / squeeze tab (v2 backlog item, tab 2-3) --------------------
+POSITIONING_PARQUET = DATA_DIR / "positioning.parquet"
+SQUEEZE_PARQUET = DATA_DIR / "squeeze.parquet"
+SQUEEZE_PREDICTIONS_CSV = LOG_DIR / "squeeze_predictions.csv"
+SQUEEZE_MIN_SI = 0.05             # candidates need >= 5% of float short
+SQUEEZE_SCORE_MIN = 70.0          # and a composite percentile score >= 70
+SQUEEZE_RISK_SI = 0.08            # >= 8% short: never sell premium (tab-1 exclusion)
+SQUEEZE_MAX_COST = 250.0          # defined-risk long call budget per position
+
 
 def ensure_dirs() -> None:
     for d in (DATA_DIR, DASHBOARD_DIR, LOG_DIR):
