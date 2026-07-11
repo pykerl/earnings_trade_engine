@@ -45,6 +45,10 @@ def _session_from_hour(ts: pd.Timestamp) -> str:
 def _yf_next_event(ticker: str, today: date, horizon: date) -> dict | None:
     import yfinance as yf
 
+    from common.yf_compat import patch_yfinance_tls
+
+    patch_yfinance_tls()
+
     try:
         df = yf.Ticker(ticker).get_earnings_dates(limit=8)
     except Exception as exc:
@@ -207,6 +211,10 @@ def reconcile(
 def fetch_market_caps(tickers: list[str]) -> pd.Series:
     """Market cap in $B via yfinance fast_info; NaN on failure (per-ticker)."""
     import yfinance as yf
+
+    from common.yf_compat import patch_yfinance_tls
+
+    patch_yfinance_tls()
 
     def one(t: str) -> tuple[str, float]:
         try:

@@ -111,6 +111,10 @@ def fetch_event_chain(ticker: str, event_date: date, session: str) -> tuple[dict
     """One name's event summary + ladder; None on failure (logged, skipped)."""
     import yfinance as yf
 
+    from common.yf_compat import patch_yfinance_tls
+
+    patch_yfinance_tls()
+
     for attempt in range(2):
         try:
             tk = yf.Ticker(ticker)

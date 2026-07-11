@@ -51,6 +51,10 @@ def fetch_yf_history(ticker: str, today: date | None = None, limit: int = 48) ->
     """Past earnings events for one name via yfinance; empty frame on failure."""
     import yfinance as yf
 
+    from common.yf_compat import patch_yfinance_tls
+
+    patch_yfinance_tls()
+
     today = today or date.today()
     try:
         df = yf.Ticker(ticker).get_earnings_dates(limit=limit)

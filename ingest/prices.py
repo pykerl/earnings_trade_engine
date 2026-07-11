@@ -59,6 +59,10 @@ def parse_sp500_html(html: str) -> pd.DataFrame:
 def _download_batch(tickers: list[str], start: date) -> pd.DataFrame | None:
     import yfinance as yf
 
+    from common.yf_compat import patch_yfinance_tls
+
+    patch_yfinance_tls()
+
     for attempt in range(BATCH_RETRIES):
         try:
             raw = yf.download(
