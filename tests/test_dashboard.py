@@ -40,10 +40,50 @@ def _scored():
     return pd.DataFrame(rows)
 
 
+def _plan():
+    import json
+
+    return pd.DataFrame([
+        {
+            "ticker": "RICH", "name": "Rich Co", "structure": "iron fly",
+            "contracts": 2, "entry_side": "credit", "entry_price": 805.0,
+            "cash_flow": 1610.0, "position_risk": 390.0, "position_max_gain": 1610.0,
+            "entry_by": date(2026, 7, 15), "earnings_date": date(2026, 7, 16),
+            "session": "BMO", "expiry": "2026-07-17", "spot": 100.0,
+            "legs_json": json.dumps([
+                {"action": "SELL", "right": "CALL", "strike": 100.0},
+                {"action": "SELL", "right": "PUT", "strike": 100.0},
+                {"action": "BUY", "right": "CALL", "strike": 110.0},
+                {"action": "BUY", "right": "PUT", "strike": 90.0},
+            ]),
+            "edge": 0.66, "score": 4.0, "implied_move_mid": 0.10,
+            "fair_move": 0.06, "n_events": 10,
+        }
+    ])
+
+
+def test_plan_section_renders_orders_dates_and_why():
+    html_text = daily.render_html(_scored(), date(2026, 7, 12), plan=_plan())
+    assert "Paper trade plan ($10,000 account)" in html_text
+    assert "SELL 2 × RICH  $100 CALL  exp Fri Jul 17" in html_text
+    assert "BUY 2 × RICH  $90 PUT  exp Fri Jul 17" in html_text
+    assert "Place this order on <strong>Wed Jul 15</strong>" in html_text
+    assert "Why this trade?" in html_text
+    assert "overpriced" in html_text
+    assert "$390" in html_text  # max loss for the position
+
+
+def test_plan_section_empty_state():
+    html_text = daily.render_html(_scored(), date(2026, 7, 12), plan=pd.DataFrame())
+    assert "No positions today" in html_text
+
+
 def test_dashboard_writes_html_and_csv(tmp_path):
     html_path, csv_path = daily.run(
-        scored=_scored(), run_date=date(2026, 7, 12), out_dir=tmp_path, banner="TEST BANNER"
+        scored=_scored(), run_date=date(2026, 7, 12), out_dir=tmp_path, banner="TEST BANNER",
+        plan=_plan(),
     )
+    assert (tmp_path / "daily_2026-07-12_plan.csv").exists()
     html_text = html_path.read_text()
     assert "RICH" in html_text and "CHEAP" in html_text and "WIDE" in html_text
     assert "TEST BANNER" in html_text

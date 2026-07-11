@@ -23,8 +23,9 @@ Output: data/scored.parquet, ranked by |score| among unscreened names.
 
 from __future__ import annotations
 
+import json
 import logging
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
@@ -59,6 +60,27 @@ def confidence_multiplier(w_name: float, low_conf_share: float, session: str, ag
     if agreement == "single_source":
         mult *= SINGLE_SOURCE_MULT
     return mult
+
+
+# ------------------------------------------------------------ trade timing --
+def entry_deadline(event_date: date, session: str) -> date:
+    """Last trading day on which the position can be opened before the move.
+
+    BMO reports hit before that day's open, so entry must happen the prior
+    trading day. AMC positions can be opened the event day itself (before the
+    close). Unknown timestamps are treated like BMO to be safe.
+    """
+    d = event_date if session == "AMC" else event_date - timedelta(days=1)
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d
+
+
+def next_trading_session(today: date) -> date:
+    d = today
+    while d.weekday() >= 5:
+        d += timedelta(days=1)
+    return d
 
 
 # ---------------------------------------------------------- structure legs --
@@ -97,6 +119,12 @@ def map_iron_fly(row: pd.Series, ladder: pd.DataFrame) -> dict | None:
                 "credit": credit,
                 "max_gain": credit * 100.0,
                 "max_loss": max_loss,
+                "legs_json": json.dumps([
+                    {"action": "SELL", "right": "CALL", "strike": row["atm_strike"]},
+                    {"action": "SELL", "right": "PUT", "strike": row["atm_strike"]},
+                    {"action": "BUY", "right": "CALL", "strike": float(call_wing["strike"])},
+                    {"action": "BUY", "right": "PUT", "strike": float(put_wing["strike"])},
+                ]),
             }
     return best
 
@@ -112,6 +140,10 @@ def map_long_vol(row: pd.Series, ladder: pd.DataFrame) -> dict | None:
             "entry_price": debit,
             "max_gain": np.inf,
             "max_loss": debit,
+            "legs_json": json.dumps([
+                {"action": "BUY", "right": "CALL", "strike": row["atm_strike"]},
+                {"action": "BUY", "right": "PUT", "strike": row["atm_strike"]},
+            ]),
         }
     for call_leg, put_leg in _wing_candidates(ladder, row["atm_strike"]):
         debit = (float(call_leg["call_ask"]) + float(put_leg["put_ask"])) * 100.0
@@ -123,6 +155,10 @@ def map_long_vol(row: pd.Series, ladder: pd.DataFrame) -> dict | None:
                 "entry_price": debit,
                 "max_gain": np.inf,
                 "max_loss": debit,
+                "legs_json": json.dumps([
+                    {"action": "BUY", "right": "CALL", "strike": float(call_leg["strike"])},
+                    {"action": "BUY", "right": "PUT", "strike": float(put_leg["strike"])},
+                ]),
             }
     return None
 
@@ -131,6 +167,7 @@ def map_structure(row: pd.Series, ladder: pd.DataFrame) -> dict:
     no_trade = {
         "structure": "no trade", "detail": "", "entry_side": "",
         "entry_price": np.nan, "max_gain": np.nan, "max_loss": np.nan,
+        "legs_json": "",
     }
     if row.get("screened", False):
         return {**no_trade, "structure": "screened out"}
@@ -184,6 +221,10 @@ def score_events(
     df["spread_cost_pct_of_edge"] = np.where(
         edge_dollars > 0, 100.0 * spread_dollars / edge_dollars, np.inf
     )
+
+    df["entry_by"] = [
+        entry_deadline(r.earnings_date, r.session) for r in df.itertuples(index=False)
+    ]
 
     structures = []
     for _, row in df.iterrows():

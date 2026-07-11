@@ -55,6 +55,8 @@ EDGE_NO_TRADE_BAND = 0.15         # |edge| below this -> "no trade" (v1 default)
 MIN_ABS_Z = 1.0                   # and require |z| >= 1 to name a structure
 
 PAPER_ACCOUNT = 10_000.0          # $10k paper account (plan §3 block 4)
+RISK_BUDGET_PCT = 0.25            # total max-loss committed at once <= 25% of account
+PER_NAME_RISK_CAP = 500.0         # max-loss per underlying (2 contracts at $250)
 
 
 def ensure_dirs() -> None:

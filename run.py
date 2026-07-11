@@ -75,8 +75,14 @@ def cmd_daily(args) -> int:
     fair_move.run()
     scored = rank.run()
 
+    from scoring.size import build_trade_plan
+
+    plan = build_trade_plan(scored, today=today)
+
     banner = FIXTURE_BANNER if args.fixtures else ""
-    html_path, csv_path = dashboard_daily.run(scored=scored, run_date=today, banner=banner)
+    html_path, csv_path = dashboard_daily.run(
+        scored=scored, run_date=today, banner=banner, plan=plan
+    )
 
     pred_path = (config.DATA_DIR / "demo" / "predictions_demo.csv") if args.fixtures else None
     new_rows = predictions.register(scored, today=today, path=pred_path)
@@ -92,6 +98,8 @@ def cmd_daily(args) -> int:
     print(
         f"\ndaily run complete ({'FIXTURES' if args.fixtures else 'live data'}):\n"
         f"  events scored : {len(scored)} ({n_live} pass liquidity screen)\n"
+        f"  trade plan    : {len(plan)} positions, "
+        f"${plan['position_risk'].sum() if len(plan) else 0:,.0f} at risk\n"
         f"  dashboard     : {html_path}\n"
         f"  csv           : {csv_path}\n"
         f"  new pre-regs  : {len(new_rows)} -> "
