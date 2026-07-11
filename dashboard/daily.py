@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from common import config
+from dashboard import charts
 
 log = logging.getLogger("ete.dashboard")
 
@@ -144,7 +145,7 @@ def why_text(row) -> str:
     )
 
 
-def _plan_card(row) -> str:
+def _plan_card(row, ticker_moves: list[float] | None = None) -> str:
     verb = "Sell the move" if row.entry_side == "credit" else "Buy the move"
     money = (
         f"Collect ≈ <strong>${row.cash_flow:,.0f}</strong> credit"
@@ -153,6 +154,9 @@ def _plan_card(row) -> str:
     )
     gain = "unlimited" if np.isinf(row.position_max_gain) else f"${row.position_max_gain:,.0f}"
     ticket = "".join(f"<li>{html.escape(t)}</li>" for t in order_lines(row))
+    chart = (
+        charts.build_chart(row, ticker_moves, f"ch-{row.ticker}") if ticker_moves else ""
+    )
     return f"""
 <div class=card>
   <div class=cardhead>
@@ -165,11 +169,16 @@ def _plan_card(row) -> str:
       (any time before the 4pm ET close)</div>
   <ul class=ticket>{ticket}</ul>
   <div class=money>{money} · max gain {gain} · max loss <strong>${row.position_risk:,.0f}</strong></div>
+  {chart}
   <details><summary>Why this trade?</summary><p>{html.escape(why_text(row))}</p></details>
 </div>"""
 
 
-def render_plan_section(plan: pd.DataFrame, account: float = config.PAPER_ACCOUNT) -> str:
+def render_plan_section(
+    plan: pd.DataFrame,
+    account: float = config.PAPER_ACCOUNT,
+    moves: pd.DataFrame | None = None,
+) -> str:
     if plan is None or plan.empty:
         return (
             "<h2>Paper trade plan ($10,000 account)</h2>"
@@ -188,7 +197,14 @@ def render_plan_section(plan: pd.DataFrame, account: float = config.PAPER_ACCOUN
             (f"${debit:,.0f}", "debit paid"),
         ]
     )
-    cards = "".join(_plan_card(r) for r in plan.itertuples(index=False))
+    moves_by_ticker: dict[str, list[float]] = {}
+    if moves is not None and len(moves):
+        moves_by_ticker = {
+            t: g["move"].astype(float).tolist() for t, g in moves.groupby("ticker")
+        }
+    cards = "".join(
+        _plan_card(r, moves_by_ticker.get(r.ticker)) for r in plan.itertuples(index=False)
+    )
     return (
         "<h2>Paper trade plan ($10,000 account)</h2>"
         "<p class=muted>Paper trading only — this is the Q2 forward test, not investment "
@@ -205,9 +221,12 @@ HEADERS = (
 )
 
 CSS = """
-:root { --ink:#1a1d21; --muted:#697077; --line:#e0e3e7; --bg:#ffffff; --card:#f6f7f8; }
+:root { --ink:#1a1d21; --muted:#697077; --line:#e0e3e7; --bg:#ffffff; --card:#f6f7f8;
+        /* chart palette — validated (dataviz six checks) against --card surfaces */
+        --c1:#2a78d6; --cgood:#0ca30c; --cbad:#d03b3b; --cimp:#4a3aa7; --cfair:#eb6834; }
 @media (prefers-color-scheme: dark) {
-  :root { --ink:#e6e8ea; --muted:#9aa1a9; --line:#33383e; --bg:#17191c; --card:#212429; }
+  :root { --ink:#e6e8ea; --muted:#9aa1a9; --line:#33383e; --bg:#17191c; --card:#212429;
+          --c1:#3987e5; --cgood:#0ca30c; --cbad:#e66767; --cimp:#9085e9; --cfair:#d95926; }
 }
 * { box-sizing: border-box; }
 body { margin:2rem auto; max-width:1200px; padding:0 1rem; background:var(--bg);
@@ -245,11 +264,15 @@ td.tk { white-space:nowrap; }
 .money { margin:.3rem 0 .5rem; }
 details summary { cursor:pointer; color:var(--muted); font-weight:600; margin-top:.2rem; }
 details p { margin:.5rem 0 0; }
-"""
+""" + charts.CHART_CSS
 
 
 def render_html(
-    scored: pd.DataFrame, run_date: date, banner: str = "", plan: pd.DataFrame | None = None
+    scored: pd.DataFrame,
+    run_date: date,
+    banner: str = "",
+    plan: pd.DataFrame | None = None,
+    moves: pd.DataFrame | None = None,
 ) -> str:
     live = scored[~scored["screened"]]
     killed = scored[scored["screened"]]
@@ -275,11 +298,12 @@ def render_html(
 <p class=sub>{run_date} · free-data v1 · paper only · edge = (implied − fair) / fair</p>
 {banner_html}
 <div class=tiles>{tiles}</div>
-{render_plan_section(plan)}
+{render_plan_section(plan, moves=moves)}
 <h2>Ranked (passing liquidity screen)</h2>
 <div class=tablewrap><table>{HEADERS}{live_rows or '<tr><td colspan=12>none</td></tr>'}</table></div>
 <h2>Screened out (spread &gt; {config.MAX_SPREAD_PCT:.0%} of straddle, OI &lt; {config.MIN_OPEN_INTEREST}, or dead quotes)</h2>
 <div class=tablewrap><table>{HEADERS}{killed_rows or '<tr><td colspan=12>none</td></tr>'}</table></div>
+<script>{charts.CHART_JS}</script>
 </body></html>
 """
 
@@ -290,6 +314,7 @@ def run(
     out_dir=None,
     banner: str = "",
     plan: pd.DataFrame | None = None,
+    moves: pd.DataFrame | None = None,
 ) -> tuple:
     config.ensure_dirs()
     run_date = run_date or date.today()
@@ -297,10 +322,12 @@ def run(
     out_dir.mkdir(parents=True, exist_ok=True)
     if scored is None:
         scored = pd.read_parquet(config.SCORED_PARQUET)
+    if moves is None and plan is not None and len(plan) and config.MOVES_PARQUET.exists():
+        moves = pd.read_parquet(config.MOVES_PARQUET)
 
     html_path = out_dir / f"daily_{run_date}.html"
     csv_path = out_dir / f"daily_{run_date}.csv"
-    html_path.write_text(render_html(scored, run_date, banner=banner, plan=plan))
+    html_path.write_text(render_html(scored, run_date, banner=banner, plan=plan, moves=moves))
     cols = [c for c in CSV_COLUMNS if c in scored.columns]
     scored[cols].to_csv(csv_path, index=False)
     if plan is not None and len(plan):
