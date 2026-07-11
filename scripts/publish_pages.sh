@@ -36,6 +36,7 @@ cp "$LATEST_HTML" "$WT/"
 [ -f "$LATEST_CSV" ] && cp "$LATEST_CSV" "$WT/"
 [ -f "${LATEST_HTML%.html}_plan.csv" ] && cp "${LATEST_HTML%.html}_plan.csv" "$WT/"
 [ -f log/predictions.csv ] && cp log/predictions.csv "$WT/"
+[ -f log/squeeze_predictions.csv ] && cp log/squeeze_predictions.csv "$WT/"
 touch "$WT/.nojekyll"
 
 cd "$WT"
