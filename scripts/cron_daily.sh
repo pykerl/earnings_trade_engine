@@ -8,10 +8,16 @@
 #   CRON_TZ=America/New_York
 #   30 16 * * 1-5  /path/to/earnings_trade_engine/scripts/cron_daily.sh
 #
-# If your cron lacks CRON_TZ support, convert 16:30 ET to your local time.
+# macOS/BSD cron has no CRON_TZ — schedule in your Mac's local time instead
+# (e.g. 13:30 for Pacific, 16:30 if your Mac is on Eastern).
 
 set -euo pipefail
-cd "$(dirname "$(readlink -f "$0")")/.."
+# portable repo-root resolution (macOS's BSD readlink lacks -f on older versions)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# cron runs with a bare PATH; make sure uv (and Homebrew tools) are findable
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 if [ -f .env ]; then
     set -a
@@ -22,7 +28,7 @@ fi
 
 mkdir -p data/logs
 LOG="data/logs/daily_$(date +%F).log"
-echo "=== run started $(date -Is) ===" >> "$LOG"
+echo "=== run started $(date "+%Y-%m-%dT%H:%M:%S%z") ===" >> "$LOG"
 
 uv run python run.py daily >> "$LOG" 2>&1
 
@@ -35,4 +41,4 @@ if [ "${ETE_GIT_PUSH_LOG:-1}" = "1" ]; then
     fi
 fi
 
-echo "=== run finished $(date -Is) ===" >> "$LOG"
+echo "=== run finished $(date "+%Y-%m-%dT%H:%M:%S%z") ===" >> "$LOG"
