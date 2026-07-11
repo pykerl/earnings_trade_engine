@@ -55,6 +55,26 @@ Credentials come from the environment only. Note: FTP needs outbound port
 21 — that works from a normal machine/cron box, but NOT from Claude Code
 cloud sandboxes, whose egress is HTTPS(443)-only.
 
+### Local daily cron (the intended production setup)
+
+```bash
+git clone https://github.com/pykerl/earnings_trade_engine.git
+cd earnings_trade_engine
+curl -LsSf https://astral.sh/uv/install.sh | sh   # if uv isn't installed
+make setup
+cp .env.example .env && $EDITOR .env               # fill in keys + FTP creds
+./scripts/cron_daily.sh                            # test one run by hand
+crontab -e                                         # then schedule it:
+#   CRON_TZ=America/New_York
+#   30 16 * * 1-5  /ABSOLUTE/PATH/earnings_trade_engine/scripts/cron_daily.sh
+```
+
+Each weekday at 4:30pm ET the script refreshes chains against the day's
+close, rescores, uploads the dashboard to your site (stable URL: the
+`index.html` in `ETE_UPLOAD_DIR`), appends new pre-registration rows, and
+pushes `log/predictions.csv` so the experiment record stays in git
+(disable with `ETE_GIT_PUSH_LOG=0`). Run logs land in `data/logs/`.
+
 ## Offline / fixtures
 
 Every module has a network-free smoke test (`make test`). For plumbing
