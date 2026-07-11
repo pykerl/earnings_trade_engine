@@ -1,0 +1,46 @@
+# earnings_trade_engine (v1, free-data edition)
+
+Ranked earnings-options dashboard built exactly to `plan_free_weekend.md`
+(sections 2–3). Free data only: yfinance + Wikipedia + Nasdaq calendar, with a
+rationed Alpha Vantage backfill drip. Paper/logging only — no broker, no live
+trading.
+
+## Quick start
+
+```bash
+make setup                          # uv sync (Python 3.11)
+export ALPHAVANTAGE_API_KEY=...     # optional; enables the backfill drip
+make daily                          # full pipeline -> data/dashboard/ + log/predictions.csv
+```
+
+`make daily` refreshes option chains, rescores, rewrites the dashboard
+(HTML + CSV under `data/dashboard/`), and appends frozen pre-registration rows
+to `log/predictions.csv` (append-only; rows are never rewritten). Slow inputs
+(prices, calendar, earnings history) are refreshed only when stale; use
+`make refresh-all` to force.
+
+## Layout
+
+| Path | What it does |
+|---|---|
+| `ingest/prices.py` | 15 yr daily OHLCV for current S&P 500 (Wikipedia constituents) → `data/prices.parquet` |
+| `ingest/calendar.py` | Next-21-day earnings calendar: yfinance × Nasdaq (optional Finnhub) cross-check; conflicting names dropped; BMO/AMC flagged |
+| `ingest/earnings_history.py` | Historical earnings dates per upcoming reporter + Alpha Vantage backfill queue (25 calls/day, 5/min, key from `ALPHAVANTAGE_API_KEY`) |
+| `features/moves.py` | Realized earnings-day moves with BMO/AMC alignment |
+| `model/fair_move.py` | Empirical-Bayes fair-move estimate (w = n/(n+6)) + scaled-t tails; `uv run python -m model.fair_move --sanity` for the calibration harness |
+| `ingest/chains.py` | ATM straddle implied move (mid/bid/ask, spread %, OI) for names reporting in the next 10 trading days |
+| `scoring/rank.py` | Edge score, liquidity screen (spread > 10% or OI < 500 ⇒ drop), strategy mapping with max loss ≤ $250 |
+| `dashboard/daily.py` | Ranked HTML + CSV |
+| `log/predictions.py` | Pre-registration writer → `log/predictions.csv` (the experiment) |
+| `run.py` | Single entrypoint (`make daily`) |
+
+`data/` is gitignored (caches + generated dashboards); `log/predictions.csv`
+is committed — it is the experiment record.
+
+## Offline / fixtures
+
+Every module has a network-free smoke test (`make test`). For plumbing
+verification without network access, `uv run python run.py daily --fixtures`
+runs the identical pipeline on clearly-labeled synthetic data; outputs are
+watermarked and pre-registration rows go to `data/demo/predictions_demo.csv`,
+never to the real log.

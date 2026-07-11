@@ -1,0 +1,10 @@
+# data artifacts (parquet caches, chains, dashboards, AV state) are never committed
+data/
+
+# the pre-registration log IS committed (log/predictions.csv) -- do not ignore log/
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
