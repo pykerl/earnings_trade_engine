@@ -37,10 +37,16 @@ to `log/predictions.csv` (append-only; rows are never rewritten). Slow inputs
 `data/` is gitignored (caches + generated dashboards); `log/predictions.csv`
 is committed — it is the experiment record.
 
-## Publishing (optional)
+## Publishing
 
-When these env vars are set, `make daily` ends by uploading the dashboard
-(dated HTML/CSV, a stable `index.html`, and `predictions.csv`) over FTPS:
+**GitHub Pages (default):** `scripts/publish_pages.sh` pushes the latest
+dashboard (stable `index.html`, dated HTML/CSV, `predictions.csv`) to the
+`gh-pages` branch — live at
+<https://pykerl.github.io/earnings_trade_engine/>. `scripts/cron_daily.sh`
+does this automatically after each run (disable with `ETE_PUBLISH_PAGES=0`).
+
+**FTPS (optional alternative):** when these env vars are set, `make daily`
+ends by uploading the same files over FTPS:
 
 ```
 ETE_UPLOAD_HOST=ftp.example.com

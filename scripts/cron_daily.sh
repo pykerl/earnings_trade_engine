@@ -32,6 +32,11 @@ echo "=== run started $(date "+%Y-%m-%dT%H:%M:%S%z") ===" >> "$LOG"
 
 uv run python run.py daily >> "$LOG" 2>&1
 
+# Publish to GitHub Pages unless explicitly disabled.
+if [ "${ETE_PUBLISH_PAGES:-1}" = "1" ]; then
+    ./scripts/publish_pages.sh >> "$LOG" 2>&1 || echo "pages publish failed" >> "$LOG"
+fi
+
 # Append-only experiment record: commit new pre-registration rows if any.
 if [ "${ETE_GIT_PUSH_LOG:-1}" = "1" ]; then
     if ! git diff --quiet -- log/predictions.csv || [ -n "$(git status --porcelain log/predictions.csv)" ]; then
