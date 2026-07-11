@@ -37,6 +37,24 @@ to `log/predictions.csv` (append-only; rows are never rewritten). Slow inputs
 `data/` is gitignored (caches + generated dashboards); `log/predictions.csv`
 is committed — it is the experiment record.
 
+## Publishing (optional)
+
+When these env vars are set, `make daily` ends by uploading the dashboard
+(dated HTML/CSV, a stable `index.html`, and `predictions.csv`) over FTPS:
+
+```
+ETE_UPLOAD_HOST=ftp.example.com
+ETE_UPLOAD_USER=...
+ETE_UPLOAD_PASSWORD=...
+ETE_UPLOAD_DIR=public_html/earnings
+ETE_UPLOAD_PROTOCOL=ftps   # default; "ftp" allowed but discouraged (cleartext)
+ETE_UPLOAD_PORT=21         # default
+```
+
+Credentials come from the environment only. Note: FTP needs outbound port
+21 — that works from a normal machine/cron box, but NOT from Claude Code
+cloud sandboxes, whose egress is HTTPS(443)-only.
+
 ## Offline / fixtures
 
 Every module has a network-free smoke test (`make test`). For plumbing

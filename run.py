@@ -81,6 +81,13 @@ def cmd_daily(args) -> int:
     pred_path = (config.DATA_DIR / "demo" / "predictions_demo.csv") if args.fixtures else None
     new_rows = predictions.register(scored, today=today, path=pred_path)
 
+    published = False
+    if not args.fixtures:  # never publish synthetic output
+        from dashboard import publish
+
+        if publish.configured():
+            published = publish.publish_dashboard(html_path, csv_path, config.PREDICTIONS_CSV)
+
     n_live = int((~scored["screened"]).sum()) if len(scored) else 0
     print(
         f"\ndaily run complete ({'FIXTURES' if args.fixtures else 'live data'}):\n"
@@ -88,7 +95,8 @@ def cmd_daily(args) -> int:
         f"  dashboard     : {html_path}\n"
         f"  csv           : {csv_path}\n"
         f"  new pre-regs  : {len(new_rows)} -> "
-        f"{pred_path or config.PREDICTIONS_CSV}"
+        f"{pred_path or config.PREDICTIONS_CSV}\n"
+        f"  published     : {'yes' if published else 'no (set ETE_UPLOAD_* to enable)'}"
     )
     return 0
 
