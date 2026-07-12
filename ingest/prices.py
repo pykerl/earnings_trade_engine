@@ -156,6 +156,34 @@ def run() -> tuple[pd.DataFrame, pd.DataFrame]:
     return universe, prices
 
 
+def run_value() -> pd.DataFrame:
+    """Prices + current market caps for the value universe (plan_value §1).
+
+    Writes VALUE_PRICES_PARQUET and adds a cap_b column to the universe
+    parquet. Reuses the same batched downloader and per-ticker fallbacks.
+    """
+    from ingest.calendar import fetch_market_caps
+
+    config.ensure_dirs()
+    universe = pd.read_parquet(config.VALUE_UNIVERSE_PARQUET)
+    prices = download_prices(universe["ticker"].tolist())
+    prices.to_parquet(config.VALUE_PRICES_PARQUET, index=False)
+    caps = fetch_market_caps(universe["ticker"].tolist())
+    universe["cap_b"] = universe["ticker"].map(caps)
+    universe.to_parquet(config.VALUE_UNIVERSE_PARQUET, index=False)
+    log.info(
+        "value prices: %d rows, caps for %d/%d names -> %s",
+        len(prices), int(universe["cap_b"].notna().sum()), len(universe),
+        config.VALUE_PRICES_PARQUET,
+    )
+    return prices
+
+
 if __name__ == "__main__":
+    import sys
+
     config.setup_logging()
-    run()
+    if "--value" in sys.argv:
+        run_value()
+    else:
+        run()
