@@ -1,9 +1,14 @@
 # earnings_trade_engine (v1, free-data edition)
 
-Ranked earnings-options dashboard built exactly to `plan_free_weekend.md`
-(sections 2–3). Free data only: yfinance + Wikipedia + Nasdaq calendar, with a
-rationed Alpha Vantage backfill drip. Paper/logging only — no broker, no live
-trading.
+Two engines, one dashboard, free data only. Paper/logging/research only —
+no broker, no live trading, not financial advice.
+
+1. **Earnings-options engine** (`plan_free_weekend.md`): implied vs fair
+   earnings moves, defined-risk structures, daily cadence (`make daily`).
+2. **Deep-value engine** (`plan_value.md`): EDGAR-companyfacts fundamentals,
+   Buffett/Munger quality gates, four valuation lenses, one-page thesis
+   memos, weekly cadence (`make weekly`). Tabs "Value screen" and
+   "Reporting soon" on the same published page.
 
 ## Quick start
 
@@ -36,6 +41,25 @@ to `log/predictions.csv` (append-only; rows are never rewritten). Slow inputs
 
 `data/` is gitignored (caches + generated dashboards); `log/predictions.csv`
 is committed — it is the experiment record.
+
+### Value engine (plan_value.md)
+
+| Path | What it does |
+|---|---|
+| `ingest/universe.py` | S&P 500 + MidCap 400 joined to SEC CIKs |
+| `ingest/xbrl_tags.py` + `ingest/edgar_facts.py` | companyfacts.zip → tidy 10-yr fundamentals; ordered tag candidates merged per-year; drop-not-guess with audit logs; hard stop if >15% of the universe fails |
+| `features/quality.py` | §2 moat/management metrics + owner earnings (stated maintenance-capex proxy); `python -m features.quality --sanity` prints the AAPL/KO/COST/JNJ/ADBE eyeball table |
+| `features/disqualifiers.py` | §4 Munger inversion incl. EDGAR full-text going-concern scan, 8-K 4.01/4.02, NT late filings |
+| `ingest/insiders.py` / `ingest/gurus.py` | Form 4 cluster buys; 13F-HR for `config/gurus.yaml` holders |
+| `valuation/lenses.py` | OE-yield vs FRED 10yr, capped two-stage DCF (±2pt range), Greenwald EPV, reverse DCF; MoS = most conservative lens |
+| `memos/generator.py` | 8-section memos with real 10-K excerpts `[FOR HUMAN REVIEW]`; dated, never overwritten |
+| `journal/writer.py` | frozen pre-registered expectations per memo (append-only) |
+
+`make weekly` refreshes prices, rescores, drafts memos for the top 15,
+appends the journal, flags new filings on held/watched names, and rebuilds
+the dashboard. EDGAR requests carry the SEC-required User-Agent and stay
+under 10 req/s. Requires allowlisted hosts: `www.sec.gov`, `data.sec.gov`,
+`efts.sec.gov`, `fred.stlouisfed.org`.
 
 ## Publishing
 
