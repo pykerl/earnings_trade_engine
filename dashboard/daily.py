@@ -25,6 +25,15 @@ from dashboard import charts, value_tab
 log = logging.getLogger("ete.dashboard")
 
 
+def _memos_for(valuations: pd.DataFrame | None) -> dict[str, str]:
+    if valuations is None or not len(valuations):
+        return {}
+    shown = valuations[
+        valuations["verdict"].isin(["buy candidate", "watch (needs price)"])
+    ]["ticker"].head(60).tolist()
+    return value_tab.load_latest_memos(shown)
+
+
 def _thesis_fn():
     try:
         from memos.generator import thesis_driver
@@ -412,6 +421,27 @@ if (location.hash) {
   var target = document.querySelector('.tabbar button[data-tab="' + location.hash.slice(1) + '"]');
   if (target) target.click();
 }
+(function () {
+  var overlay = document.querySelector('.memo-overlay');
+  if (!overlay) return;
+  var body = overlay.querySelector('.memo-body');
+  function close() { overlay.hidden = true; body.textContent = ''; }
+  document.querySelectorAll('.memobtn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tpl = document.getElementById('memo-' + btn.dataset.memo);
+      if (!tpl) return;
+      body.textContent = '';
+      body.appendChild(tpl.content.cloneNode(true));
+      overlay.hidden = false;
+      overlay.querySelector('.memo-close').focus();
+    });
+  });
+  overlay.querySelector('.memo-close').addEventListener('click', close);
+  overlay.addEventListener('click', function (ev) { if (ev.target === overlay) close(); });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && !overlay.hidden) close();
+  });
+})();
 document.querySelectorAll('table.sortable th[data-s]').forEach(function (th) {
   th.addEventListener('click', function () {
     var table = th.closest('table');
@@ -489,6 +519,26 @@ details p { margin:.5rem 0 0; }
 .meterfill { display:block; height:100%; border-radius:4px; background:var(--c1); }
 .srow { margin:.3rem 0; }
 table.sortable th[data-s] { cursor:pointer; text-decoration:underline dotted; }
+.memobtn { background:none; border:none; padding:0; font:inherit; font-weight:700;
+           color:var(--c1); cursor:pointer; text-decoration:underline dotted; }
+.memo-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:20;
+                display:flex; align-items:flex-start; justify-content:center;
+                padding:3vh 1rem; overflow-y:auto; }
+.memo-overlay[hidden] { display:none; }
+.memo-dialog { background:var(--bg); color:var(--ink); border:1px solid var(--line);
+               border-radius:12px; max-width:820px; width:100%; padding:1.2rem 1.6rem 2rem;
+               box-shadow:0 12px 40px rgba(0,0,0,.35); }
+.memo-close { float:right; background:var(--card); border:1px solid var(--line);
+              border-radius:6px; padding:.3rem .7rem; font:inherit; color:var(--muted);
+              cursor:pointer; }
+.memo-body h2 { font-size:1.2rem; margin-top:.4rem; }
+.memo-body h3 { font-size:1rem; margin-top:1.2rem; }
+.memo-body table { border-collapse:collapse; margin:.5rem 0; }
+.memo-body td, .memo-body th { border-bottom:1px solid var(--line); padding:.3rem .6rem;
+                               text-align:left; }
+.memo-body blockquote { border-left:3px solid var(--line); margin:.6rem 0;
+                        padding:.2rem .8rem; color:var(--muted); }
+.memo-body p, .memo-body li { line-height:1.5; }
 """ + charts.CHART_CSS
 
 
@@ -554,7 +604,8 @@ def render_html(
 {render_positioning_section(squeeze)}
 </section>
 <section class=tabpane id=value hidden>
-{value_tab.render_value_screen(valuations, insiders=insiders, gurus=gurus)}
+{value_tab.render_value_screen(valuations, insiders=insiders, gurus=gurus,
+                               memos_by_ticker=_memos_for(valuations))}
 </section>
 <section class=tabpane id=valuesoon hidden>
 {value_tab.render_reporting_soon(valuations, events, today=run_date, thesis_fn=_thesis_fn())}

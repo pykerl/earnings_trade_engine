@@ -9,12 +9,76 @@ anti-pattern guard stated on the page itself.
 from __future__ import annotations
 
 import html
+import re
 from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
 
 from common import config
+
+
+# ------------------------------------------------- markdown -> HTML (memos) --
+def md_to_html(md: str) -> str:
+    """Minimal renderer for our own memo markdown (headings, lists, tables,
+    blockquotes, bold/italic/code). All text is HTML-escaped FIRST — memo
+    bodies include raw 10-K excerpts, which are untrusted input."""
+
+    def inline(s: str) -> str:
+        s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+        s = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", s)
+        s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
+        return s
+
+    lines = html.escape(md).splitlines()
+    out, i = [], 0
+    while i < len(lines):
+        line = lines[i]
+        if not line.strip():
+            i += 1
+            continue
+        if line.startswith("#"):
+            level = min(len(line) - len(line.lstrip("#")), 4)
+            out.append(f"<h{level + 1}>{inline(line.lstrip('#').strip())}</h{level + 1}>")
+            i += 1
+        elif line.startswith("&gt;"):
+            quote = []
+            while i < len(lines) and lines[i].startswith("&gt;"):
+                quote.append(inline(lines[i][4:].strip()))
+                i += 1
+            out.append(f"<blockquote>{'<br>'.join(quote)}</blockquote>")
+        elif line.lstrip().startswith("- "):
+            items = []
+            while i < len(lines) and lines[i].lstrip().startswith("- "):
+                items.append(f"<li>{inline(lines[i].lstrip()[2:])}</li>")
+                i += 1
+            out.append(f"<ul>{''.join(items)}</ul>")
+        elif line.startswith("|"):
+            rows = []
+            while i < len(lines) and lines[i].startswith("|"):
+                cells = [c.strip() for c in lines[i].strip("|").split("|")]
+                if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells):
+                    tag = "th" if not rows else "td"
+                    rows.append("<tr>" + "".join(f"<{tag}>{inline(c)}</{tag}>" for c in cells) + "</tr>")
+                i += 1
+            out.append(f"<table>{''.join(rows)}</table>")
+        else:
+            para = []
+            while i < len(lines) and lines[i].strip() and not re.match(r"^(#|\||&gt;)|^\s*- ", lines[i]):
+                para.append(inline(lines[i].strip()))
+                i += 1
+            out.append(f"<p>{' '.join(para)}</p>")
+    return "".join(out)
+
+
+def load_latest_memos(tickers: list[str]) -> dict[str, str]:
+    """{ticker: memo markdown} for the newest memo file per ticker."""
+    out = {}
+    for t in tickers:
+        matches = sorted(config.MEMOS_DIR.glob(f"{t}_*.md"))
+        if matches:
+            out[t] = matches[-1].read_text()
+    return out
 
 GUARD = (
     "Anti-pattern guard: this process never buys BECAUSE earnings are coming. "
@@ -36,7 +100,8 @@ def _first_sentence(text: str) -> str:
 
 
 def render_value_screen(vals: pd.DataFrame | None, insiders: pd.DataFrame | None = None,
-                        gurus: pd.DataFrame | None = None) -> str:
+                        gurus: pd.DataFrame | None = None,
+                        memos_by_ticker: dict[str, str] | None = None) -> str:
     intro = (
         "<h2>Value screen — wonderful companies at fair prices</h2>"
         "<p class=muted>Quality gates run before cheapness: moat footprints (10-yr ROIC "
@@ -51,8 +116,9 @@ def render_value_screen(vals: pd.DataFrame | None, insiders: pd.DataFrame | None
         gurus.groupby("ticker")["holder"].apply(lambda s: ", ".join(sorted(set(s)))).to_dict()
         if gurus is not None and len(gurus) else {}
     )
+    memos_by_ticker = memos_by_ticker or {}
     show = vals[vals["verdict"].isin(["buy candidate", "watch (needs price)"])].head(60)
-    rows = []
+    rows, templates = [], []
     for i, r in enumerate(show.itertuples(index=False), 1):
         marks = []
         if r.ticker in cluster:
@@ -61,9 +127,19 @@ def render_value_screen(vals: pd.DataFrame | None, insiders: pd.DataFrame | None
             marks.append(f"held: {guru_names[r.ticker]}")
         if r.needs_human_review:
             marks.append("needs human review")
+        tk_cell = f"<strong>{html.escape(str(r.ticker))}</strong>"
+        if r.ticker in memos_by_ticker:
+            tk_cell = (
+                f'<button class="memobtn" data-memo="{html.escape(str(r.ticker))}" '
+                f'title="Open the thesis memo">{html.escape(str(r.ticker))} 📝</button>'
+            )
+            templates.append(
+                f'<template id="memo-{html.escape(str(r.ticker))}">'
+                f"{md_to_html(memos_by_ticker[r.ticker])}</template>"
+            )
         rows.append(
             f"<tr><td class=num>{i}</td>"
-            f"<td class=tk><strong>{html.escape(str(r.ticker))}</strong></td>"
+            f"<td class=tk>{tk_cell}</td>"
             f"<td>{html.escape(str(r.verdict))}</td>"
             f"<td data-v={_sv(r.margin_of_safety)} class=num><strong>{_pct(r.margin_of_safety)}</strong></td>"
             f"<td data-v={_sv(r.oe_yield)} class=num>{_pct(r.oe_yield, 1)}</td>"
@@ -91,8 +167,13 @@ def render_value_screen(vals: pd.DataFrame | None, insiders: pd.DataFrame | None
         "<th data-s=1>Implied vs hist growth</th><th data-s=1>ND/EBITDA</th>"
         "<th>Demotions</th><th>Marks</th></tr>"
         f"{''.join(rows)}</table></div>"
-        "<p class=muted>Memos for the top candidates live in <code>memos/</code> in the repo "
-        "(git-versioned, human review pending). Full list incl. ejections in the CSV.</p>"
+        "<p class=muted>Tickers marked 📝 open the drafted thesis memo (auto-generated, "
+        "human review pending). All memos are git-versioned in <code>memos/</code>; "
+        "full list incl. ejections in the CSV.</p>"
+        f"{''.join(templates)}"
+        '<div class="memo-overlay" hidden><div class="memo-dialog" role="dialog" aria-modal="true">'
+        '<button class="memo-close" aria-label="Close">✕ close</button>'
+        '<div class="memo-body"></div></div></div>'
     )
 
 
