@@ -1,0 +1,65 @@
+# {{ ticker }} — {{ name }} · thesis memo ({{ memo_date }})
+
+> Auto-drafted by the value engine for human review and sign-off.
+> Maintenance-capex proxy: **{{ maint_capex_proxy }}** (owner earnings inherit its error).
+> Not financial advice; the final judgment stays human.
+
+## 1. Business in two sentences
+{{ business_excerpt }}
+
+**[FOR HUMAN REVIEW]** — compress the Item 1 excerpt above into two honest sentences.
+
+## 2. Moat evidence (numbers, not adjectives)
+- ROIC 10-yr median **{{ "%.0f%%"|format(100 * roic_median_10y) }}** (latest {{ "%.0f%%"|format(100 * roic_latest) }}, trend {{ "%+.1f"|format(100 * roic_trend) }} pts/yr){% if op_income_derived %} — EBIT reconstructed as pretax + interest{% endif %}
+- Gross margin **{{ "%.0f%%"|format(100 * gross_margin) }}**, 10-yr σ {{ "%.1f"|format(100 * gm_sigma_10y) }} pts — {{ "a tight band" if gm_sigma_10y < 0.03 else "meaningful variability" }}
+- FCF/NI conversion 10-yr: **{{ "%.2f"|format(fcf_ni_10y) }}** {{ "(cash earnings are real)" if fcf_ni_10y >= 0.8 else "(watch accruals)" }}
+- Incremental ROIC (5-yr): {{ "%.0f%%"|format(100 * incremental_roic_5y) if incremental_roic_5y == incremental_roic_5y else "n/a" }}
+- Revenue: 10-yr CAGR {{ "%.1f%%"|format(100 * rev_cagr_10y) }}, grew in {{ "%.0f%%"|format(100 * rev_consistency) }} of years; 2020 stress: {{ "%+.1f%%"|format(100 * rev_drawdown_2020) if rev_drawdown_2020 == rev_drawdown_2020 else "n/a" }}
+- Balance sheet: net debt/EBITDA **{{ "%.1f"|format(nd_ebitda) if nd_ebitda == nd_ebitda else "net cash" }}**, interest coverage {{ "%.0fx"|format(interest_coverage) if interest_coverage == interest_coverage else "n/a" }}
+- Moat flag: **{{ "PASS" if moat_flag else "FAIL" }}** (≥13% median ROIC without leverage)
+
+## 3. Management & capital allocation
+- Share count 10-yr CAGR: **{{ "%+.1f%%"|format(100 * share_cagr_10y) }}**/yr {{ "(shrinking — good)" if share_cagr_10y < 0 else "(diluting)" }}
+- SBC / FCF (10-yr): {{ "%.0f%%"|format(100 * sbc_fcf_10y) if sbc_fcf_10y == sbc_fcf_10y else "n/a" }}
+- Buyback timing score: {{ "%+.2f"|format(buyback_timing) if buyback_timing == buyback_timing else "n/a" }} (+1 = bought only in cheap years); bought back stock in {{ buyback_years_10y }}/10 years, paid dividends in {{ dividend_years_10y }}/10
+- Insider activity (12m): {{ insider_line }}
+- Guru overlay (13F, 45-day lag): {{ guru_line }}
+
+## 4. Owner earnings & the four valuations
+Normalized owner earnings (3-yr avg): **${{ "%.2f"|format(owner_earnings_norm / 1e9) }}B** — NI + D&A − {{ maint_capex_proxy }}.
+
+| Lens | Value | vs market cap ${{ "%.1f"|format(market_cap / 1e9) }}B |
+|---|---|---|
+| Owner-earnings yield vs 10-yr ({{ "%.2f%%"|format(100 * t10) }} + {{ "%.0f"|format(100 * 0.04) }}pt spread) | ${{ "%.1f"|format(value_oe_yield / 1e9) }}B | {{ "%+.0f%%"|format(100 * (value_oe_yield / market_cap - 1)) }} |
+| Two-stage DCF (g={{ "%.1f%%"|format(100 * dcf_growth_used) }}, range ${{ "%.1f"|format(value_dcf_low / 1e9) }}B–${{ "%.1f"|format(value_dcf_high / 1e9) }}B) | ${{ "%.1f"|format(value_dcf / 1e9) }}B | {{ "%+.0f%%"|format(100 * (value_dcf / market_cap - 1)) }} |
+| Greenwald EPV (zero growth) | ${{ "%.1f"|format(value_epv / 1e9) }}B | {{ "%+.0f%%"|format(100 * (value_epv / market_cap - 1)) }} |
+| Reverse DCF — growth the price implies | {{ "%.1f%%"|format(100 * implied_growth) if implied_growth == implied_growth else ">30% (beyond sane cap)" }}/yr | history says {{ "%.1f%%"|format(100 * rev_cagr_10y) }} |
+
+**Margin of safety vs most conservative lens: {{ "%.0f%%"|format(100 * margin_of_safety) }}**
+
+## 5. What the market is missing (the thesis)
+{{ thesis }}
+
+**[FOR HUMAN REVIEW]** — validate the driver above against the MD&A excerpt:
+
+{{ mda_excerpt }}
+
+## 6. Bear case & pre-mortem
+It's 2031 and this position lost money. The most likely reasons, steelmanned:
+{% for line in bear_case %}- {{ line }}
+{% endfor %}
+Disqualifier flags that fired or nearly fired: {{ near_misses }}
+Needs human review: {{ needs_human_review }}
+
+## 7. Earnings-season note
+{{ earnings_note }}
+
+Pre-registered expectations (frozen in journal/expectations.csv — the print
+updates beliefs, it does not anchor them):
+{% for line in expectations %}- {{ line }}
+{% endfor %}
+
+## 8. Verdict
+**{{ verdict | upper }}** — {{ verdict_sentence }}
+
+*Why this, at this price, instead of an index fund:* {{ index_fund_sentence }}
