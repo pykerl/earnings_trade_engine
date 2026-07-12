@@ -14,7 +14,7 @@ from __future__ import annotations
 import html
 import json
 import logging
-from datetime import date
+from datetime import date, datetime, timezone
 
 import numpy as np
 import pandas as pd
@@ -192,6 +192,43 @@ def _plan_card(row, ticker_moves: list[float] | None = None) -> str:
 </div>"""
 
 
+STRUCTURE_EXPLAINER = """
+<details class=howto><summary>How to read these trades (plain English)</summary>
+<div class=howtogrid>
+<div><strong>Iron fly — "sell the move"</strong><br>
+You SELL a call and a put at the current price (collecting cash now) and BUY a
+cheaper call above and put below as insurance wings. If the stock barely moves
+by expiry, every option expires worthless and you keep the cash collected.
+If it moves a lot, the wings cap your loss at the stated max. Used when the
+options market prices a BIGGER earnings move than this stock historically makes.</div>
+<div><strong>Long straddle — "buy the move"</strong><br>
+You BUY a call and a put at the current price. A big move in EITHER direction
+makes one of them very valuable; a quiet print loses the (capped) cost. Used
+when the market prices a SMALLER move than this stock usually makes.</div>
+<div><strong>Long strangle — cheaper "buy the move"</strong><br>
+Same idea as the straddle but the call is above and the put below the current
+price, so it costs less and needs a bigger move to pay.</div>
+<div><strong>Reading a ticket</strong><br>
+"SELL 2 × BAC $47 CALL exp Fri Jul 17" = sell-to-open two contracts of the
+$47-strike call expiring that Friday. Place all legs of a card as ONE order
+(a broker "combo"/multi-leg ticket) at a limit near the shown price, on the
+date the card says, before the 4pm ET close. Skip any fill much worse than
+quoted — the edge is not big enough to pay a bad fill.</div>
+</div></details>
+"""
+
+
+def _week_strip(plan: pd.DataFrame) -> str:
+    if plan is None or plan.empty:
+        return ""
+    pills = "".join(
+        f'<span class=pill><strong>{_fmt_day(r.entry_by)}</strong> · '
+        f'{html.escape(str(r.ticker))} {html.escape(str(r.structure))}</span>'
+        for r in plan.sort_values("entry_by").itertuples(index=False)
+    )
+    return f'<div class=weekstrip><span class=muted>This week:</span> {pills}</div>'
+
+
 def render_plan_section(
     plan: pd.DataFrame,
     account: float = config.PAPER_ACCOUNT,
@@ -228,6 +265,8 @@ def render_plan_section(
         "<p class=muted>Paper trading only — this is the Q2 forward test, not investment "
         "advice. Prices are yesterday's close; enter with limit orders near the quoted "
         "values and skip any fill that is much worse.</p>"
+        f"{_week_strip(plan)}"
+        f"{STRUCTURE_EXPLAINER}"
         f"<div class=tiles>{tiles}</div><div class=cards>{cards}</div>"
     )
 
@@ -508,12 +547,36 @@ td.tk { white-space:nowrap; }
 .money { margin:.3rem 0 .5rem; }
 details summary { cursor:pointer; color:var(--muted); font-weight:600; margin-top:.2rem; }
 details p { margin:.5rem 0 0; }
-.tabbar { display:flex; gap:.4rem; margin:1.1rem 0 1.3rem; border-bottom:2px solid var(--line); }
+.tabbar { display:flex; gap:.4rem; margin:1.1rem 0 1.3rem; border-bottom:2px solid var(--line);
+          position:sticky; top:0; background:var(--bg); z-index:10;
+          overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.tabbar::-webkit-scrollbar { display:none; }
 .tabbar button { background:none; border:none; border-bottom:3px solid transparent;
                  margin-bottom:-2px; padding:.55rem .9rem; font:inherit; font-weight:600;
-                 color:var(--muted); cursor:pointer; }
+                 color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0; }
 .tabbar button.active { color:var(--ink); border-bottom-color:var(--c1); }
 .tabbar button:hover { color:var(--ink); }
+.weekstrip { display:flex; gap:.45rem; flex-wrap:wrap; align-items:center; margin:.7rem 0; }
+.pill { background:var(--card); border:1px solid var(--line); border-radius:999px;
+        padding:.25rem .7rem; font-size:.8rem; white-space:nowrap; }
+.howto { background:var(--card); border:1px solid var(--line); border-radius:10px;
+         padding:.6rem 1rem; margin:.8rem 0 1rem; }
+.howto summary { margin:0; }
+.howtogrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+             gap:.9rem 1.2rem; margin-top:.7rem; font-size:.86rem; line-height:1.5; }
+tr:hover td { background:color-mix(in srgb, var(--card) 60%, transparent); }
+@media (max-width: 720px) {
+  body { margin:.8rem auto; padding:0 .6rem; font-size:13px; }
+  h1 { font-size:1.1rem; } h2 { font-size:.95rem; }
+  th, td { padding:.35rem .4rem; }
+  .tile { min-width:7rem; padding:.5rem .7rem; }
+  .tile .v { font-size:1.15rem; }
+  .cards { grid-template-columns:1fr; }
+  .ticket { font-size:.78rem; }
+  .flags { max-width:9rem; }
+  .memo-dialog { padding:.9rem .9rem 1.4rem; }
+  .memo-overlay { padding:1.5vh .4rem; }
+}
 .meter { display:inline-block; width:56px; height:8px; border-radius:4px;
          background:var(--c1track); vertical-align:middle; margin-left:.4rem; }
 .meterfill { display:block; height:100%; border-radius:4px; background:var(--c1); }
@@ -575,12 +638,15 @@ def render_html(
         int((valuations["verdict"] == "buy candidate").sum())
         if valuations is not None and len(valuations) else 0
     )
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     return f"""<!doctype html>
 <html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
+<link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
 <title>Earnings dashboard — {run_date}</title><style>{CSS}</style></head><body>
 <h1>Earnings edge dashboard</h1>
-<p class=sub>{run_date} · free-data v1 · paper only · edge = (implied − fair) / fair</p>
+<p class=sub>{run_date} · free-data v1 · paper only · edge = (implied − fair) / fair
+ · <span title="when this page was generated">updated {stamp}</span></p>
 {banner_html}
 <div class=tabbar role=tablist>
   <button class=active role=tab aria-selected=true data-tab=plan>Trade plan</button>
@@ -631,6 +697,12 @@ def run(
     out_dir.mkdir(parents=True, exist_ok=True)
     if scored is None:
         scored = pd.read_parquet(config.SCORED_PARQUET)
+    if plan is None and len(scored):
+        # regenerating without an explicit plan (e.g. the weekly run) must
+        # not silently drop the trade-plan cards — rebuild from scored
+        from scoring.size import build_trade_plan
+
+        plan = build_trade_plan(scored, today=run_date or date.today())
     if moves is None and plan is not None and len(plan) and config.MOVES_PARQUET.exists():
         moves = pd.read_parquet(config.MOVES_PARQUET)
     if squeeze is None and config.SQUEEZE_PARQUET.exists():

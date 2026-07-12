@@ -21,7 +21,13 @@ def _scored():
         "score": 4.0, "spread_cost_pct_of_edge": 12.5, "structure": "iron fly",
         "detail": "short 100 straddle @ bid, long 90P / 110C @ ask",
         "entry_side": "credit", "entry_price": 805.0, "max_gain": 805.0, "max_loss": 195.0,
-        "flags": "",
+        "flags": "", "entry_by": date(2026, 7, 15), "squeeze_risk": False,
+        "legs_json": (
+            '[{"action":"SELL","right":"CALL","strike":100.0},'
+            '{"action":"SELL","right":"PUT","strike":100.0},'
+            '{"action":"BUY","right":"CALL","strike":110.0},'
+            '{"action":"BUY","right":"PUT","strike":90.0}]'
+        ),
     }
     rows = [dict(base, ticker="RICH")]
     rows.append(
@@ -60,6 +66,38 @@ def _plan():
             "fair_move": 0.06, "n_events": 10,
         }
     ])
+
+
+def test_plan_section_has_explainers_and_week_strip():
+    html_text = daily.render_html(_scored(), date(2026, 7, 12), plan=_plan())
+    assert "How to read these trades (plain English)" in html_text
+    assert "sell the move" in html_text and "buy the move" in html_text
+    assert "SELL a call and a put" in html_text
+    assert "Reading a ticket" in html_text
+    assert "This week:" in html_text and "Wed Jul 15" in html_text
+
+
+def test_page_is_mobile_ready():
+    html_text = daily.render_html(_scored(), date(2026, 7, 12), plan=_plan())
+    assert 'name=viewport content="width=device-width' in html_text
+    assert "@media (max-width: 720px)" in html_text
+    assert "position:sticky" in html_text  # tab bar stays reachable
+    assert 'rel=icon' in html_text
+    assert "updated" in html_text  # freshness stamp
+
+
+def test_run_rebuilds_plan_when_not_supplied(tmp_path, monkeypatch):
+    from common import config
+
+    scored = _scored()
+    monkeypatch.setattr(daily, "_memos_for", lambda v: {})
+    html_path, _ = daily.run(
+        scored=scored, run_date=date(2026, 7, 12), out_dir=tmp_path
+    )
+    text = html_path.read_text()
+    # RICH is unscreened iron-fly with future entry window -> cards must render
+    assert "Paper trade plan ($10,000 account)" in text
+    assert "SELL 2 × RICH" in text or "iron fly" in text
 
 
 def test_plan_section_renders_orders_dates_and_why():
