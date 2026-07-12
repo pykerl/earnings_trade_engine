@@ -67,6 +67,49 @@ SQUEEZE_SCORE_MIN = 70.0          # and a composite percentile score >= 70
 SQUEEZE_RISK_SI = 0.08            # >= 8% short: never sell premium (tab-1 exclusion)
 SQUEEZE_MAX_COST = 250.0          # defined-risk long call budget per position
 
+# ---- value engine (plan_value.md) -------------------------------------------
+EDGAR_DIR = DATA_DIR / "edgar"
+COMPANYFACTS_ZIP = EDGAR_DIR / "companyfacts.zip"
+CIK_MAP_JSON = EDGAR_DIR / "company_tickers.json"
+VALUE_UNIVERSE_PARQUET = DATA_DIR / "value_universe.parquet"
+FUNDAMENTALS_PARQUET = DATA_DIR / "fundamentals.parquet"
+FUNDAMENTALS_DROPS_CSV = DATA_DIR / "edgar" / "dropped_companies.csv"
+UNMAPPED_TAGS_CSV = DATA_DIR / "edgar" / "unmapped_tags.csv"
+QUALITY_PARQUET = DATA_DIR / "quality.parquet"
+DISQUALIFIERS_PARQUET = DATA_DIR / "disqualifiers.parquet"
+INSIDERS_PARQUET = DATA_DIR / "insiders.parquet"
+GURUS_PARQUET = DATA_DIR / "gurus.parquet"
+VALUATIONS_PARQUET = DATA_DIR / "valuations.parquet"
+VALUE_PRICES_PARQUET = DATA_DIR / "value_prices.parquet"
+GURUS_YAML = REPO_ROOT / "config" / "gurus.yaml"
+MEMOS_DIR = REPO_ROOT / "memos"
+JOURNAL_CSV = REPO_ROOT / "journal" / "expectations.csv"
+
+# SEC requires a descriptive User-Agent with contact; 10 req/s ceiling.
+EDGAR_USER_AGENT = os.environ.get(
+    "ETE_EDGAR_UA", "earnings-trade-engine research paulk@vorbs.com"
+)
+EDGAR_MAX_RPS = 8.0               # stay under SEC's 10 req/s with margin
+
+FUNDAMENTAL_YEARS = 10
+# §3 valuation knobs
+DCF_DISCOUNT_RATE = 0.10          # flat hurdle rate, not CAPM theater
+DCF_TERMINAL_GROWTH = 0.025
+DCF_GROWTH_HARD_CAP = 0.10
+DCF_STAGE1_YEARS = 10
+DCF_GROWTH_RANGE_PTS = 0.02       # report ±2pt growth range
+OE_YIELD_MIN_SPREAD = 0.04        # owner-earnings yield >= 10yr + 4%
+MOS_BUY = 0.27                    # >= 25-30% for the buy list (midpoint)
+MOS_WATCH = 0.15
+# §4 disqualifier thresholds
+DQ_ND_EBITDA_MAX = 3.0
+DQ_INTEREST_COVER_MIN = 4.0
+DQ_DILUTION_CAGR = 0.02
+DQ_SBC_FCF_MAX = 0.20
+# §2 moat thresholds
+MOAT_ROIC_MIN = 0.13              # 12-15% band midpoint
+MOAT_ND_EBITDA_MAX = 2.5
+
 
 def ensure_dirs() -> None:
     for d in (DATA_DIR, DASHBOARD_DIR, LOG_DIR):
