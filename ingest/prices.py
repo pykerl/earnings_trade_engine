@@ -39,7 +39,8 @@ def fetch_sp500_universe(session=None) -> pd.DataFrame:
     return parse_sp500_html(resp.text)
 
 
-def parse_sp500_html(html: str) -> pd.DataFrame:
+def parse_constituents_html(html: str, min_rows: int) -> pd.DataFrame:
+    """Wikipedia S&P index constituents table (500 and 400 share a schema)."""
     tables = pd.read_html(io.StringIO(html))
     table = next(t for t in tables if "Symbol" in t.columns and "GICS Sector" in t.columns)
     out = pd.DataFrame(
@@ -51,9 +52,13 @@ def parse_sp500_html(html: str) -> pd.DataFrame:
         }
     )
     out = out.drop_duplicates("ticker").reset_index(drop=True)
-    if len(out) < 400:  # sanity: the table should have ~503 rows
-        raise RuntimeError(f"S&P 500 table looks wrong: only {len(out)} rows parsed")
+    if len(out) < min_rows:
+        raise RuntimeError(f"constituents table looks wrong: only {len(out)} rows parsed")
     return out
+
+
+def parse_sp500_html(html: str) -> pd.DataFrame:
+    return parse_constituents_html(html, min_rows=400)
 
 
 def _download_batch(tickers: list[str], start: date) -> pd.DataFrame | None:
