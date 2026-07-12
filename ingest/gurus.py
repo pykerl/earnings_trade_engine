@@ -57,11 +57,16 @@ def latest_13f_accession(submissions: dict) -> str | None:
 
 
 def parse_infotable(xml_text: str) -> pd.DataFrame:
-    """13F information table XML -> issuer/value/shares rows."""
+    """13F information table XML -> issuer/value/shares rows.
+
+    Since 2023 the `value` field is reported in whole DOLLARS (older
+    filings used thousands). We store dollars: pre-2023 tables would need a
+    x1000 — the configured holders' latest filings are all post-change.
+    """
     try:
         root = ElementTree.fromstring(xml_text)
     except ElementTree.ParseError:
-        return pd.DataFrame(columns=["issuer", "value_kusd", "shares"])
+        return pd.DataFrame(columns=["issuer", "value_usd", "shares"])
     ns = ""
     if root.tag.startswith("{"):
         ns = root.tag.split("}")[0] + "}"
@@ -70,7 +75,7 @@ def parse_infotable(xml_text: str) -> pd.DataFrame:
         issuer = info.findtext(f"{ns}nameOfIssuer") or ""
         value = float(info.findtext(f"{ns}value") or 0)
         shares = float(info.findtext(f"{ns}shrsOrPrnAmt/{ns}sshPrnamt") or 0)
-        rows.append({"issuer": issuer, "value_kusd": value, "shares": shares})
+        rows.append({"issuer": issuer, "value_usd": value, "shares": shares})
     return pd.DataFrame(rows)
 
 
@@ -115,7 +120,11 @@ def match_to_universe(positions: pd.DataFrame, universe: pd.DataFrame) -> pd.Dat
             "13F issuers not matched to universe (fine — most funds hold "
             "names outside it): %d of %d", len(unmatched), len(positions),
         )
-    return positions.dropna(subset=["ticker"])[["ticker", "holder", "value_kusd", "shares"]]
+    matched = positions.dropna(subset=["ticker"])
+    # share classes file as separate rows (LEN + LEN.B) — aggregate per holder
+    return (
+        matched.groupby(["ticker", "holder"], as_index=False)[["value_usd", "shares"]].sum()
+    )
 
 
 def run() -> pd.DataFrame:
@@ -125,7 +134,7 @@ def run() -> pd.DataFrame:
     frames = [fetch_holder_positions(h, session) for h in load_holders()]
     positions = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     if positions.empty:
-        out = pd.DataFrame(columns=["ticker", "holder", "value_kusd", "shares"])
+        out = pd.DataFrame(columns=["ticker", "holder", "value_usd", "shares"])
     else:
         out = match_to_universe(positions, universe)
     out.to_parquet(config.GURUS_PARQUET, index=False)

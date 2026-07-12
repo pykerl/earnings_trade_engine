@@ -11,7 +11,7 @@
 
 ## 2. Moat evidence (numbers, not adjectives)
 - ROIC 10-yr median **{{ "%.0f%%"|format(100 * roic_median_10y) }}** (latest {{ "%.0f%%"|format(100 * roic_latest) }}, trend {{ "%+.1f"|format(100 * roic_trend) }} pts/yr){% if op_income_derived %} — EBIT reconstructed as pretax + interest{% endif %}
-- Gross margin **{{ "%.0f%%"|format(100 * gross_margin) }}**, 10-yr σ {{ "%.1f"|format(100 * gm_sigma_10y) }} pts — {{ "a tight band" if gm_sigma_10y < 0.03 else "meaningful variability" }}
+- Gross margin {{ "**%.0f%%**, 10-yr σ %.1f pts — %s"|format(100 * gross_margin, 100 * gm_sigma_10y, "a tight band" if gm_sigma_10y < 0.03 else "meaningful variability") if gross_margin == gross_margin else "n/a (COGS not separately reported — common for builders/insurers)" }}
 - FCF/NI conversion 10-yr: **{{ "%.2f"|format(fcf_ni_10y) }}** {{ "(cash earnings are real)" if fcf_ni_10y >= 0.8 else "(watch accruals)" }}
 - Incremental ROIC (5-yr): {{ "%.0f%%"|format(100 * incremental_roic_5y) if incremental_roic_5y == incremental_roic_5y else "n/a" }}
 - Revenue: 10-yr CAGR {{ "%.1f%%"|format(100 * rev_cagr_10y) }}, grew in {{ "%.0f%%"|format(100 * rev_consistency) }} of years; 2020 stress: {{ "%+.1f%%"|format(100 * rev_drawdown_2020) if rev_drawdown_2020 == rev_drawdown_2020 else "n/a" }}
@@ -19,7 +19,7 @@
 - Moat flag: **{{ "PASS" if moat_flag else "FAIL" }}** (≥13% median ROIC without leverage)
 
 ## 3. Management & capital allocation
-- Share count 10-yr CAGR: **{{ "%+.1f%%"|format(100 * share_cagr_10y) }}**/yr {{ "(shrinking — good)" if share_cagr_10y < 0 else "(diluting)" }}
+- Share count 10-yr CAGR: {{ "**%+.1f%%**/yr %s"|format(100 * share_cagr_10y, "(shrinking — good)" if share_cagr_10y < 0 else "(diluting)") if share_cagr_10y == share_cagr_10y else "n/a" }}
 - SBC / FCF (10-yr): {{ "%.0f%%"|format(100 * sbc_fcf_10y) if sbc_fcf_10y == sbc_fcf_10y else "n/a" }}
 - Buyback timing score: {{ "%+.2f"|format(buyback_timing) if buyback_timing == buyback_timing else "n/a" }} (+1 = bought only in cheap years); bought back stock in {{ buyback_years_10y }}/10 years, paid dividends in {{ dividend_years_10y }}/10
 - Insider activity (12m): {{ insider_line }}

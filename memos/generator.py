@@ -258,7 +258,7 @@ def generate_memos(
         if gurus is not None and len(gurus) and t in set(gurus["ticker"]):
             gg = gurus[gurus["ticker"] == t]
             g_line = "; ".join(
-                f"{r.holder}: ${r.value_kusd / 1e6:.2f}B" for r in gg.itertuples(index=False)
+                f"{r.holder}: ${r.value_usd / 1e9:.2f}B" for r in gg.itertuples(index=False)
             )
         excerpts = fetch_10k_excerpts(int(cik_by_ticker[t]), session) if t in cik_by_ticker else {
             "business_excerpt": "", "mda_excerpt": ""
