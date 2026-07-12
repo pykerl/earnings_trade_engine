@@ -128,6 +128,97 @@ def cmd_daily(args) -> int:
     return 0
 
 
+def cmd_weekly(args) -> int:
+    """Value engine cadence (plan_value.md §7): refresh prices, rescore,
+    regenerate memos/dashboard, flag new filings on held/watched names."""
+    import pandas as pd
+
+    from dashboard import daily as dashboard_daily
+    from features import disqualifiers, quality
+    from ingest import gurus as gurus_mod
+    from ingest import insiders as insiders_mod
+    from ingest import prices as prices_mod
+    from ingest import universe as universe_mod
+    from journal import writer as journal_writer
+    from memos import generator as memo_gen
+    from valuation import lenses
+
+    today = date.fromisoformat(args.today) if args.today else date.today()
+    config.ensure_dirs()
+
+    if args.refresh_all or not config.VALUE_UNIVERSE_PARQUET.exists():
+        universe_mod.run()
+        from ingest import edgar_facts
+
+        edgar_facts.run()
+    if args.refresh_all or _stale(config.VALUE_PRICES_PARQUET, 6 * 24):
+        prices_mod.run_value()
+    else:
+        log.info("value prices fresh; skipping (use --refresh-all)")
+
+    quality.run()
+    disqualifiers.run()
+    vals = lenses.run()
+    gurus = gurus_mod.run()
+
+    top = vals[vals["rank_score"] > 0].head(15)
+    insiders = insiders_mod.run(top["ticker"].tolist(), today=today)
+
+    universe = pd.read_parquet(config.VALUE_UNIVERSE_PARQUET)
+    events = (
+        pd.read_parquet(config.EVENTS_PARQUET) if config.EVENTS_PARQUET.exists() else None
+    )
+    memo_paths = memo_gen.generate_memos(
+        vals, universe, insiders, gurus, events, top_n=15, memo_date=today
+    )
+    journal_rows = [
+        journal_writer.expectations_row(row, memo_gen.thesis_driver(row), today)
+        for _, row in top.iterrows()
+    ]
+    n_journal = journal_writer.register(journal_rows)
+
+    alerts = new_filing_alerts(vals, universe)
+    html_path, _ = dashboard_daily.run(run_date=today)
+
+    print(
+        f"\nweekly run complete:\n"
+        f"  companies valued : {len(vals)}\n"
+        f"  buy candidates   : {int((vals['verdict'] == 'buy candidate').sum())}\n"
+        f"  watch list       : {int((vals['verdict'] == 'watch (needs price)').sum())}\n"
+        f"  memos drafted    : {len(memo_paths)} -> memos/\n"
+        f"  journal rows     : {n_journal} new -> {config.JOURNAL_CSV}\n"
+        f"  filing alerts    : {len(alerts)}"
+        + ("".join(f"\n    - {a}" for a in alerts) if alerts else "")
+        + f"\n  dashboard        : {html_path}"
+    )
+    return 0
+
+
+def new_filing_alerts(vals, universe, days: int = 7) -> list[str]:
+    """Held/watched names with a fresh 10-K/10-Q/8-K in the last `days`."""
+    import json as _json
+    from datetime import timedelta
+
+    watched = set(
+        vals[vals["verdict"].isin(["buy candidate", "watch (needs price)"])]["ticker"]
+    )
+    cik_by_ticker = dict(zip(universe["ticker"], universe["cik"]))
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
+    alerts = []
+    for t in sorted(watched):
+        cache = config.EDGAR_DIR / "submissions" / f"CIK{int(cik_by_ticker.get(t, 0)):010d}.json"
+        if not cache.exists():
+            continue
+        try:
+            recent = _json.loads(cache.read_text())["filings"]["recent"]
+        except (ValueError, KeyError):
+            continue
+        for form, filed in zip(recent.get("form", []), recent.get("filingDate", [])):
+            if filed >= cutoff and str(form) in ("10-K", "10-Q", "8-K"):
+                alerts.append(f"{t}: {form} filed {filed} — review against the thesis journal")
+    return alerts
+
+
 def cmd_av_backfill(_args) -> int:
     from ingest.earnings_history import run_av_backfill
 
@@ -158,6 +249,12 @@ def main(argv=None) -> int:
     p_daily.add_argument("--fixtures", action="store_true", help="offline demo on synthetic data")
     p_daily.add_argument("--today", help="override run date (YYYY-MM-DD), mainly for fixtures")
     p_daily.set_defaults(func=cmd_daily)
+
+    p_weekly = sub.add_parser("weekly", help="value engine: refresh, rescore, memos, dashboard")
+    p_weekly.add_argument("--refresh-all", action="store_true",
+                          help="re-pull universe + companyfacts + prices")
+    p_weekly.add_argument("--today", help="override run date (YYYY-MM-DD)")
+    p_weekly.set_defaults(func=cmd_weekly)
 
     p_av = sub.add_parser("av-backfill", help="spend today's Alpha Vantage ration on the queue")
     p_av.set_defaults(func=cmd_av_backfill)

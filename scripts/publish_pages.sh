@@ -37,6 +37,13 @@ cp "$LATEST_HTML" "$WT/"
 [ -f "${LATEST_HTML%.html}_plan.csv" ] && cp "${LATEST_HTML%.html}_plan.csv" "$WT/"
 [ -f log/predictions.csv ] && cp log/predictions.csv "$WT/"
 [ -f log/squeeze_predictions.csv ] && cp log/squeeze_predictions.csv "$WT/"
+LATEST_VALUE_CSV=$(ls -t data/dashboard/value_screen_*.csv 2>/dev/null | head -1 || true)
+[ -n "$LATEST_VALUE_CSV" ] && cp "$LATEST_VALUE_CSV" "$WT/value_screen.csv"
+if ls memos/*.md >/dev/null 2>&1; then
+    mkdir -p "$WT/memos"
+    cp memos/*.md "$WT/memos/"
+fi
+[ -f journal/expectations.csv ] && cp journal/expectations.csv "$WT/"
 touch "$WT/.nojekyll"
 
 cd "$WT"

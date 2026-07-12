@@ -20,9 +20,18 @@ import numpy as np
 import pandas as pd
 
 from common import config
-from dashboard import charts
+from dashboard import charts, value_tab
 
 log = logging.getLogger("ete.dashboard")
+
+
+def _thesis_fn():
+    try:
+        from memos.generator import thesis_driver
+
+        return thesis_driver
+    except Exception:  # pragma: no cover - defensive
+        return None
 
 CSV_COLUMNS = [
     "ticker", "name", "sector", "earnings_date", "session", "entry_by",
@@ -490,6 +499,10 @@ def render_html(
     plan: pd.DataFrame | None = None,
     moves: pd.DataFrame | None = None,
     squeeze: pd.DataFrame | None = None,
+    valuations: pd.DataFrame | None = None,
+    events: pd.DataFrame | None = None,
+    insiders: pd.DataFrame | None = None,
+    gurus: pd.DataFrame | None = None,
 ) -> str:
     live = scored[~scored["screened"]]
     killed = scored[scored["screened"]]
@@ -508,6 +521,10 @@ def render_html(
     live_rows = "".join(_row_html(r) for r in live.itertuples(index=False))
     killed_rows = "".join(_row_html(r) for r in killed.itertuples(index=False))
     n_cand = int(squeeze["candidate"].sum()) if squeeze is not None and len(squeeze) else 0
+    n_buy = (
+        int((valuations["verdict"] == "buy candidate").sum())
+        if valuations is not None and len(valuations) else 0
+    )
     return f"""<!doctype html>
 <html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
@@ -519,6 +536,8 @@ def render_html(
   <button class=active role=tab aria-selected=true data-tab=plan>Trade plan</button>
   <button role=tab aria-selected=false data-tab=squeeze>Squeeze watch{f' ({n_cand})' if n_cand else ''}</button>
   <button role=tab aria-selected=false data-tab=positioning>Positioning</button>
+  <button role=tab aria-selected=false data-tab=value>Value screen{f' ({n_buy})' if n_buy else ''}</button>
+  <button role=tab aria-selected=false data-tab=valuesoon>Reporting soon</button>
 </div>
 <section class=tabpane id=plan>
 <div class=tiles>{tiles}</div>
@@ -533,6 +552,12 @@ def render_html(
 </section>
 <section class=tabpane id=positioning hidden>
 {render_positioning_section(squeeze)}
+</section>
+<section class=tabpane id=value hidden>
+{value_tab.render_value_screen(valuations, insiders=insiders, gurus=gurus)}
+</section>
+<section class=tabpane id=valuesoon hidden>
+{value_tab.render_reporting_soon(valuations, events, today=run_date, thesis_fn=_thesis_fn())}
 </section>
 <script>{charts.CHART_JS}</script>
 <script>{TABS_JS}</script>
@@ -560,11 +585,24 @@ def run(
     if squeeze is None and config.SQUEEZE_PARQUET.exists():
         squeeze = pd.read_parquet(config.SQUEEZE_PARQUET)
 
+    def _opt(path):
+        return pd.read_parquet(path) if path.exists() else None
+
+    valuations = _opt(config.VALUATIONS_PARQUET)
+    events = _opt(config.EVENTS_PARQUET)
+    v_insiders = _opt(config.INSIDERS_PARQUET)
+    v_gurus = _opt(config.GURUS_PARQUET)
+
     html_path = out_dir / f"daily_{run_date}.html"
     csv_path = out_dir / f"daily_{run_date}.csv"
     html_path.write_text(
-        render_html(scored, run_date, banner=banner, plan=plan, moves=moves, squeeze=squeeze)
+        render_html(
+            scored, run_date, banner=banner, plan=plan, moves=moves, squeeze=squeeze,
+            valuations=valuations, events=events, insiders=v_insiders, gurus=v_gurus,
+        )
     )
+    if valuations is not None and len(valuations):
+        valuations.to_csv(out_dir / f"value_screen_{run_date}.csv", index=False)
     cols = [c for c in CSV_COLUMNS if c in scored.columns]
     scored[cols].to_csv(csv_path, index=False)
     if plan is not None and len(plan):

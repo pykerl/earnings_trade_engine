@@ -1,4 +1,9 @@
-.PHONY: setup daily test refresh-all av-backfill
+.PHONY: setup daily weekly test refresh-all av-backfill
+
+# Value engine (plan_value.md §7): ~30 min/week — refresh prices, rescore,
+# regenerate memos + the Value tabs, flag new filings on held/watched names.
+weekly:
+	uv run python run.py weekly
 
 setup:
 	uv sync
