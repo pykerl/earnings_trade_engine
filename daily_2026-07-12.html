@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang=en><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
+<link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
 <title>Earnings dashboard — 2026-07-12</title><style>
 :root { --ink:#1a1d21; --muted:#697077; --line:#e0e3e7; --bg:#ffffff; --card:#f6f7f8;
         /* chart palette — validated (dataviz six checks) against --card surfaces */
@@ -47,12 +48,36 @@ td.tk { white-space:nowrap; }
 .money { margin:.3rem 0 .5rem; }
 details summary { cursor:pointer; color:var(--muted); font-weight:600; margin-top:.2rem; }
 details p { margin:.5rem 0 0; }
-.tabbar { display:flex; gap:.4rem; margin:1.1rem 0 1.3rem; border-bottom:2px solid var(--line); }
+.tabbar { display:flex; gap:.4rem; margin:1.1rem 0 1.3rem; border-bottom:2px solid var(--line);
+          position:sticky; top:0; background:var(--bg); z-index:10;
+          overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.tabbar::-webkit-scrollbar { display:none; }
 .tabbar button { background:none; border:none; border-bottom:3px solid transparent;
                  margin-bottom:-2px; padding:.55rem .9rem; font:inherit; font-weight:600;
-                 color:var(--muted); cursor:pointer; }
+                 color:var(--muted); cursor:pointer; white-space:nowrap; flex-shrink:0; }
 .tabbar button.active { color:var(--ink); border-bottom-color:var(--c1); }
 .tabbar button:hover { color:var(--ink); }
+.weekstrip { display:flex; gap:.45rem; flex-wrap:wrap; align-items:center; margin:.7rem 0; }
+.pill { background:var(--card); border:1px solid var(--line); border-radius:999px;
+        padding:.25rem .7rem; font-size:.8rem; white-space:nowrap; }
+.howto { background:var(--card); border:1px solid var(--line); border-radius:10px;
+         padding:.6rem 1rem; margin:.8rem 0 1rem; }
+.howto summary { margin:0; }
+.howtogrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+             gap:.9rem 1.2rem; margin-top:.7rem; font-size:.86rem; line-height:1.5; }
+tr:hover td { background:color-mix(in srgb, var(--card) 60%, transparent); }
+@media (max-width: 720px) {
+  body { margin:.8rem auto; padding:0 .6rem; font-size:13px; }
+  h1 { font-size:1.1rem; } h2 { font-size:.95rem; }
+  th, td { padding:.35rem .4rem; }
+  .tile { min-width:7rem; padding:.5rem .7rem; }
+  .tile .v { font-size:1.15rem; }
+  .cards { grid-template-columns:1fr; }
+  .ticket { font-size:.78rem; }
+  .flags { max-width:9rem; }
+  .memo-dialog { padding:.9rem .9rem 1.4rem; }
+  .memo-overlay { padding:1.5vh .4rem; }
+}
 .meter { display:inline-block; width:56px; height:8px; border-radius:4px;
          background:var(--c1track); vertical-align:middle; margin-left:.4rem; }
 .meterfill { display:block; height:100%; border-radius:4px; background:var(--c1); }
@@ -116,7 +141,8 @@ table.sortable th[data-s] { cursor:pointer; text-decoration:underline dotted; }
 .card { position:relative; }
 </style></head><body>
 <h1>Earnings edge dashboard</h1>
-<p class=sub>2026-07-12 · free-data v1 · paper only · edge = (implied − fair) / fair</p>
+<p class=sub>2026-07-12 · free-data v1 · paper only · edge = (implied − fair) / fair
+ · <span title="when this page was generated">updated 2026-07-12 13:55 UTC</span></p>
 
 <div class=tabbar role=tablist>
   <button class=active role=tab aria-selected=true data-tab=plan>Trade plan</button>
@@ -127,7 +153,255 @@ table.sortable th[data-s] { cursor:pointer; text-decoration:underline dotted; }
 </div>
 <section class=tabpane id=plan>
 <div class=tiles><div class=tile><div class=v>90</div><div class=k>events scored</div></div><div class=tile><div class=v>9</div><div class=k>pass liquidity screen</div></div><div class=tile><div class=v>81</div><div class=k>screened out</div></div><div class=tile><div class=v>6</div><div class=k>actionable structures</div></div></div>
-<h2>Paper trade plan ($10,000 account)</h2><p class=muted>No positions today — either nothing has enough edge, or entry windows have passed. That is the default state, not a bug.</p>
+<h2>Paper trade plan ($10,000 account)</h2><p class=muted>Paper trading only — this is the Q2 forward test, not investment advice. Prices are yesterday's close; enter with limit orders near the quoted values and skip any fill that is much worse.</p><div class=weekstrip><span class=muted>This week:</span> <span class=pill><strong>Mon Jul 13</strong> · BAC iron fly</span><span class=pill><strong>Mon Jul 13</strong> · C iron fly</span><span class=pill><strong>Wed Jul 22</strong> · NOW iron fly</span><span class=pill><strong>Wed Jul 22</strong> · GOOGL iron fly</span><span class=pill><strong>Thu Jul 23</strong> · INTC iron fly</span></div>
+<details class=howto><summary>How to read these trades (plain English)</summary>
+<div class=howtogrid>
+<div><strong>Iron fly — "sell the move"</strong><br>
+You SELL a call and a put at the current price (collecting cash now) and BUY a
+cheaper call above and put below as insurance wings. If the stock barely moves
+by expiry, every option expires worthless and you keep the cash collected.
+If it moves a lot, the wings cap your loss at the stated max. Used when the
+options market prices a BIGGER earnings move than this stock historically makes.</div>
+<div><strong>Long straddle — "buy the move"</strong><br>
+You BUY a call and a put at the current price. A big move in EITHER direction
+makes one of them very valuable; a quiet print loses the (capped) cost. Used
+when the market prices a SMALLER move than this stock usually makes.</div>
+<div><strong>Long strangle — cheaper "buy the move"</strong><br>
+Same idea as the straddle but the call is above and the put below the current
+price, so it costs less and needs a bigger move to pay.</div>
+<div><strong>Reading a ticket</strong><br>
+"SELL 2 × BAC $47 CALL exp Fri Jul 17" = sell-to-open two contracts of the
+$47-strike call expiring that Friday. Place all legs of a card as ONE order
+(a broker "combo"/multi-leg ticket) at a limit near the shown price, on the
+date the card says, before the 4pm ET close. Skip any fill much worse than
+quoted — the edge is not big enough to pay a bad fill.</div>
+</div></details>
+<div class=tiles><div class=tile><div class=v>5</div><div class=k>positions to order</div></div><div class=tile><div class=v>$2,286</div><div class=k>total at risk (budget $2,500)</div></div><div class=tile><div class=v>$5,014</div><div class=k>credit collected</div></div><div class=tile><div class=v>$-0</div><div class=k>debit paid</div></div></div><div class=cards>
+<div class=card>
+  <div class=cardhead>
+    <span class=tkbig>NOW</span>
+    <span class=verb>Sell the move — iron fly</span>
+  </div>
+  <div class=muted>ServiceNow · reports Wed Jul 22
+      after the close</div>
+  <div class=when>📅 Place this order on <strong>Wed Jul 22</strong>
+      (any time before the 4pm ET close)</div>
+  <ul class=ticket><li>SELL 2 × NOW  $108 CALL  exp Fri Jul 24</li><li>SELL 2 × NOW  $108 PUT  exp Fri Jul 24</li><li>BUY 2 × NOW  $117 CALL  exp Fri Jul 24</li><li>BUY 2 × NOW  $99 PUT  exp Fri Jul 24</li></ul>
+  <div class=money>Collect ≈ <strong>$1,310</strong> credit · max gain $1,310 · max loss <strong>$490</strong></div>
+  
+<div class="chart" id="ch-NOW">
+  <div class="chart-title">If NOW moves … you make/lose
+    <span class="muted">(win rate on its last 49 reports: <strong>25/49</strong>)</span></div>
+  <div class="chart-legend">
+    <span><span class="key k-line"></span>P&amp;L at expiry</span>
+    <span><span class="key k-win"></span>past move → win</span>
+    <span><span class="key k-loss"></span>past move → loss</span>
+    <span><span class="key k-imp"></span>market-priced move</span>
+    <span><span class="key k-fair"></span>model fair move</span>
+  </div>
+  <svg viewBox="0 0 640 282" width="100%" tabindex="0" role="img"
+       aria-label="Payoff and historical earnings-move histogram for NOW">
+    <text x="50" y="13.0" text-anchor="end" class="c-tick">$1,310</text><line x1="56" y1="10.0" x2="626" y2="10.0" class="c-grid"/><text x="50" y="84.3" text-anchor="end" class="c-tick">$0</text><line x1="56" y1="81.3" x2="626" y2="81.3" class="c-grid"/><text x="50" y="111.0" text-anchor="end" class="c-tick">-$490</text><line x1="56" y1="108.0" x2="626" y2="108.0" class="c-grid"/>
+    <line x1="56" y1="81.3" x2="626" y2="81.3" class="c-zero"/>
+    <path d="M265.7,81.3 L265.7,81.3 L344.5,10.0 L344.5,81.3 Z M344.5,81.3 L344.5,10.0 L423.3,81.3 L423.3,81.3 Z" class="c-wash"/>
+    <line x1="171.1" y1="4" x2="171.1" y2="258" class="c-imp c-ref"/><line x1="234.4" y1="4" x2="234.4" y2="258" class="c-fair c-ref"/><line x1="510.9" y1="4" x2="510.9" y2="258" class="c-imp c-ref"/><line x1="447.6" y1="4" x2="447.6" y2="258" class="c-fair c-ref"/>
+    <polyline points="56.0,108.0 236.2,108.0 344.5,10.0 452.7,108.0 626.0,108.0" class="c-pay"/>
+    <text x="60" y="12" class="c-lab"><tspan class="c-keyimp">▮</tspan> market ±13.1%  <tspan class="c-keyfair">▮</tspan> model ±8.2%</text>
+    <rect x="109.8" y="243.2" width="21.9" height="14.8" rx="3" class="c-loss"/><rect x="135.7" y="243.2" width="21.9" height="14.8" rx="3" class="c-loss"/><rect x="187.5" y="228.5" width="21.9" height="29.5" rx="3" class="c-loss"/><rect x="213.5" y="228.5" width="21.9" height="29.5" rx="3" class="c-loss"/><rect x="239.4" y="228.5" width="21.9" height="29.5" rx="3" class="c-loss"/><rect x="265.3" y="243.2" width="21.9" height="14.8" rx="3" class="c-win"/><rect x="291.2" y="199.0" width="21.9" height="59.0" rx="3" class="c-win"/><rect x="343.0" y="169.5" width="21.9" height="88.5" rx="3" class="c-win"/><rect x="368.9" y="140.0" width="21.9" height="118.0" rx="3" class="c-win"/><rect x="394.8" y="169.5" width="21.9" height="88.5" rx="3" class="c-win"/><rect x="420.7" y="184.2" width="21.9" height="73.8" rx="3" class="c-loss"/><rect x="446.6" y="184.2" width="21.9" height="73.8" rx="3" class="c-loss"/><rect x="472.5" y="243.2" width="21.9" height="14.8" rx="3" class="c-loss"/><rect x="498.5" y="213.8" width="21.9" height="44.2" rx="3" class="c-loss"/><rect x="524.4" y="228.5" width="21.9" height="29.5" rx="3" class="c-loss"/>
+    <line x1="56" y1="258" x2="626" y2="258" class="c-axis"/>
+    <line x1="81.9" y1="258" x2="81.9" y2="262" class="c-axis"/><text x="81.9" y="274" text-anchor="middle" class="c-tick">-20%</text><line x1="211.5" y1="258" x2="211.5" y2="262" class="c-axis"/><text x="211.5" y="274" text-anchor="middle" class="c-tick">-10%</text><line x1="341.0" y1="258" x2="341.0" y2="262" class="c-axis"/><text x="341.0" y="274" text-anchor="middle" class="c-tick">0%</text><line x1="470.5" y1="258" x2="470.5" y2="262" class="c-axis"/><text x="470.5" y="274" text-anchor="middle" class="c-tick">+10%</text><line x1="600.1" y1="258" x2="600.1" y2="262" class="c-axis"/><text x="600.1" y="274" text-anchor="middle" class="c-tick">+20%</text>
+    <line class="c-cross" x1="0" y1="4" x2="0" y2="258" visibility="hidden"/>
+    <rect class="c-hit" x="56" y="0" width="570" height="258" fill="transparent"/>
+  </svg>
+  <div class="chart-tip" hidden></div>
+  <script type="application/json" class="chart-data">{"half": 0.22, "spot": 107.70999908447266, "contracts": 2, "knots": [[-0.22, -490.0], [-0.08087, -490.0], [0.00269, 1310.0], [0.08625, -490.0], [0.22, -490.0]], "bins": [[-0.22, -0.2, 0, 0], [-0.2, -0.18, 0, 0], [-0.18, -0.16, 0, 1], [-0.16, -0.14, 0, 1], [-0.14, -0.12, 0, 0], [-0.12, -0.1, 0, 2], [-0.1, -0.08, 0, 2], [-0.08, -0.06, 0, 2], [-0.06, -0.04, 1, 0], [-0.04, -0.02, 4, 0], [-0.02, 0.0, 0, 0], [0.0, 0.02, 6, 0], [0.02, 0.04, 8, 0], [0.04, 0.06, 6, 0], [0.06, 0.08, 0, 5], [0.08, 0.1, 0, 5], [0.1, 0.12, 0, 1], [0.12, 0.14, 0, 3], [0.14, 0.16, 0, 2], [0.16, 0.18, 0, 0], [0.18, 0.2, 0, 0], [0.2, 0.22, 0, 0]], "total": 49}</script>
+  <details class="chart-table"><summary>Table view</summary>
+    <p class="muted">Breakevens at -5.8% and +6.4%. Win rate 25/49 past reports.</p>
+    <table><tr><th>Move range</th><th>Wins</th><th>Losses</th><th>P&amp;L at mid</th></tr><tr><td>-18.0% to -16.0%</td><td>0</td><td>1</td><td>-$490</td></tr><tr><td>-16.0% to -14.0%</td><td>0</td><td>1</td><td>-$490</td></tr><tr><td>-12.0% to -10.0%</td><td>0</td><td>2</td><td>-$490</td></tr><tr><td>-10.0% to -8.0%</td><td>0</td><td>2</td><td>-$490</td></tr><tr><td>-8.0% to -6.0%</td><td>0</td><td>2</td><td>-$256</td></tr><tr><td>-6.0% to -4.0%</td><td>1</td><td>0</td><td>$175</td></tr><tr><td>-4.0% to -2.0%</td><td>4</td><td>0</td><td>$606</td></tr><tr><td>+0.0% to +2.0%</td><td>6</td><td>0</td><td>$1,153</td></tr><tr><td>+2.0% to +4.0%</td><td>8</td><td>0</td><td>$722</td></tr><tr><td>+4.0% to +6.0%</td><td>6</td><td>0</td><td>$291</td></tr><tr><td>+6.0% to +8.0%</td><td>0</td><td>5</td><td>-$140</td></tr><tr><td>+8.0% to +10.0%</td><td>0</td><td>5</td><td>-$490</td></tr><tr><td>+10.0% to +12.0%</td><td>0</td><td>1</td><td>-$490</td></tr><tr><td>+12.0% to +14.0%</td><td>0</td><td>3</td><td>-$490</td></tr><tr><td>+14.0% to +16.0%</td><td>0</td><td>2</td><td>-$490</td></tr></table>
+  </details>
+</div>
+  <details><summary>Why this trade?</summary><p>The options market is pricing a ±13.1% earnings move for NOW, but over its recent 12 reports it has typically moved about ±8.2%. That makes the move look ≈59% overpriced, so this trade sells that expensive insurance with wings for protection. You collect $1,310 up front and keep all of it if NOW closes between $101.45 and $114.55 at expiry. No matter how wild the move, you cannot lose more than $490.</p></details>
+</div>
+<div class=card>
+  <div class=cardhead>
+    <span class=tkbig>INTC</span>
+    <span class=verb>Sell the move — iron fly</span>
+  </div>
+  <div class=muted>Intel · reports Thu Jul 23
+      after the close</div>
+  <div class=when>📅 Place this order on <strong>Thu Jul 23</strong>
+      (any time before the 4pm ET close)</div>
+  <ul class=ticket><li>SELL 2 × INTC  $110 CALL  exp Fri Jul 24</li><li>SELL 2 × INTC  $110 PUT  exp Fri Jul 24</li><li>BUY 2 × INTC  $120 CALL  exp Fri Jul 24</li><li>BUY 2 × INTC  $100 PUT  exp Fri Jul 24</li></ul>
+  <div class=money>Collect ≈ <strong>$1,520</strong> credit · max gain $1,520 · max loss <strong>$480</strong></div>
+  
+<div class="chart" id="ch-INTC">
+  <div class="chart-title">If INTC moves … you make/lose
+    <span class="muted">(win rate on its last 49 reports: <strong>25/49</strong>)</span></div>
+  <div class="chart-legend">
+    <span><span class="key k-line"></span>P&amp;L at expiry</span>
+    <span><span class="key k-win"></span>past move → win</span>
+    <span><span class="key k-loss"></span>past move → loss</span>
+    <span><span class="key k-imp"></span>market-priced move</span>
+    <span><span class="key k-fair"></span>model fair move</span>
+  </div>
+  <svg viewBox="0 0 640 282" width="100%" tabindex="0" role="img"
+       aria-label="Payoff and historical earnings-move histogram for INTC">
+    <text x="50" y="13.0" text-anchor="end" class="c-tick">$1,520</text><line x1="56" y1="10.0" x2="626" y2="10.0" class="c-grid"/><text x="50" y="87.5" text-anchor="end" class="c-tick">$0</text><line x1="56" y1="84.5" x2="626" y2="84.5" class="c-grid"/><text x="50" y="111.0" text-anchor="end" class="c-tick">-$480</text><line x1="56" y1="108.0" x2="626" y2="108.0" class="c-grid"/>
+    <line x1="56" y1="84.5" x2="626" y2="84.5" class="c-zero"/>
+    <path d="M276.7,84.5 L276.7,84.5 L342.4,10.0 L342.4,84.5 Z M342.4,84.5 L342.4,10.0 L408.1,84.5 L408.1,84.5 Z" class="c-wash"/>
+    <line x1="190.3" y1="4" x2="190.3" y2="258" class="c-imp c-ref"/><line x1="249.4" y1="4" x2="249.4" y2="258" class="c-fair c-ref"/><line x1="491.7" y1="4" x2="491.7" y2="258" class="c-imp c-ref"/><line x1="432.6" y1="4" x2="432.6" y2="258" class="c-fair c-ref"/>
+    <polyline points="56.0,108.0 255.9,108.0 342.4,10.0 428.9,108.0 626.0,108.0" class="c-pay"/>
+    <text x="60" y="12" class="c-lab"><tspan class="c-keyimp">▮</tspan> market ±15.9%  <tspan class="c-keyfair">▮</tspan> model ±9.6%</text>
+    <rect x="67.7" y="250.1" width="24.0" height="7.9" rx="3" class="c-loss"/><rect x="162.7" y="242.3" width="24.0" height="15.7" rx="3" class="c-loss"/><rect x="210.2" y="234.4" width="24.0" height="23.6" rx="3" class="c-loss"/><rect x="257.8" y="210.8" width="24.0" height="47.2" rx="3" class="c-win"/><rect x="257.8" y="138.0" width="24.0" height="70.8" rx="3" class="c-loss"/><rect x="305.2" y="210.8" width="24.0" height="47.2" rx="3" class="c-win"/><rect x="352.8" y="163.6" width="24.0" height="94.4" rx="3" class="c-win"/><rect x="400.2" y="250.1" width="24.0" height="7.9" rx="3" class="c-win"/><rect x="400.2" y="200.9" width="24.0" height="47.2" rx="3" class="c-loss"/><rect x="447.7" y="242.3" width="24.0" height="15.7" rx="3" class="c-loss"/><rect x="542.8" y="250.1" width="24.0" height="7.9" rx="3" class="c-loss"/>
+    <line x1="56" y1="258" x2="626" y2="258" class="c-axis"/>
+    <line x1="151.0" y1="258" x2="151.0" y2="262" class="c-axis"/><text x="151.0" y="274" text-anchor="middle" class="c-tick">-20%</text><line x1="246.0" y1="258" x2="246.0" y2="262" class="c-axis"/><text x="246.0" y="274" text-anchor="middle" class="c-tick">-10%</text><line x1="341.0" y1="258" x2="341.0" y2="262" class="c-axis"/><text x="341.0" y="274" text-anchor="middle" class="c-tick">0%</text><line x1="436.0" y1="258" x2="436.0" y2="262" class="c-axis"/><text x="436.0" y="274" text-anchor="middle" class="c-tick">+10%</text><line x1="531.0" y1="258" x2="531.0" y2="262" class="c-axis"/><text x="531.0" y="274" text-anchor="middle" class="c-tick">+20%</text>
+    <line class="c-cross" x1="0" y1="4" x2="0" y2="258" visibility="hidden"/>
+    <rect class="c-hit" x="56" y="0" width="570" height="258" fill="transparent"/>
+  </svg>
+  <div class="chart-tip" hidden></div>
+  <script type="application/json" class="chart-data">{"half": 0.3, "spot": 109.83999633789062, "contracts": 2, "knots": [[-0.3, -480.0], [-0.08958, -480.0], [0.00146, 1520.0], [0.0925, -480.0], [0.3, -480.0]], "bins": [[-0.3, -0.25, 0, 1], [-0.25, -0.2, 0, 0], [-0.2, -0.15, 0, 2], [-0.15, -0.1, 0, 3], [-0.1, -0.05, 6, 9], [-0.05, 0.0, 6, 0], [0.0, 0.05, 12, 0], [0.05, 0.1, 1, 6], [0.1, 0.15, 0, 2], [0.15, 0.2, 0, 0], [0.2, 0.25, 0, 1], [0.25, 0.3, 0, 0]], "total": 49}</script>
+  <details class="chart-table"><summary>Table view</summary>
+    <p class="muted">Breakevens at -6.8% and +7.1%. Win rate 25/49 past reports.</p>
+    <table><tr><th>Move range</th><th>Wins</th><th>Losses</th><th>P&amp;L at mid</th></tr><tr><td>-30.0% to -25.0%</td><td>0</td><td>1</td><td>-$480</td></tr><tr><td>-20.0% to -15.0%</td><td>0</td><td>2</td><td>-$480</td></tr><tr><td>-15.0% to -10.0%</td><td>0</td><td>3</td><td>-$480</td></tr><tr><td>-10.0% to -5.0%</td><td>6</td><td>9</td><td>-$160</td></tr><tr><td>-5.0% to +0.0%</td><td>6</td><td>0</td><td>$939</td></tr><tr><td>+0.0% to +5.0%</td><td>12</td><td>0</td><td>$1,003</td></tr><tr><td>+5.0% to +10.0%</td><td>1</td><td>6</td><td>-$96</td></tr><tr><td>+10.0% to +15.0%</td><td>0</td><td>2</td><td>-$480</td></tr><tr><td>+20.0% to +25.0%</td><td>0</td><td>1</td><td>-$480</td></tr></table>
+  </details>
+</div>
+  <details><summary>Why this trade?</summary><p>The options market is pricing a ±15.9% earnings move for INTC, but over its recent 12 reports it has typically moved about ±9.6%. That makes the move look ≈65% overpriced, so this trade sells that expensive insurance with wings for protection. You collect $1,520 up front and keep all of it if INTC closes between $102.40 and $117.60 at expiry. No matter how wild the move, you cannot lose more than $480.</p></details>
+</div>
+<div class=card>
+  <div class=cardhead>
+    <span class=tkbig>BAC</span>
+    <span class=verb>Sell the move — iron fly</span>
+  </div>
+  <div class=muted>Bank of America · reports Tue Jul 14
+      before the market opens</div>
+  <div class=when>📅 Place this order on <strong>Mon Jul 13</strong>
+      (any time before the 4pm ET close)</div>
+  <ul class=ticket><li>SELL 2 × BAC  $60 CALL  exp Fri Jul 17</li><li>SELL 2 × BAC  $60 PUT  exp Fri Jul 17</li><li>BUY 2 × BAC  $64 CALL  exp Fri Jul 17</li><li>BUY 2 × BAC  $56 PUT  exp Fri Jul 17</li></ul>
+  <div class=money>Collect ≈ <strong>$386</strong> credit · max gain $386 · max loss <strong>$414</strong></div>
+  
+<div class="chart" id="ch-BAC">
+  <div class="chart-title">If BAC moves … you make/lose
+    <span class="muted">(win rate on its last 49 reports: <strong>34/49</strong>)</span></div>
+  <div class="chart-legend">
+    <span><span class="key k-line"></span>P&amp;L at expiry</span>
+    <span><span class="key k-win"></span>past move → win</span>
+    <span><span class="key k-loss"></span>past move → loss</span>
+    <span><span class="key k-imp"></span>market-priced move</span>
+    <span><span class="key k-fair"></span>model fair move</span>
+  </div>
+  <svg viewBox="0 0 640 282" width="100%" tabindex="0" role="img"
+       aria-label="Payoff and historical earnings-move histogram for BAC">
+    <text x="50" y="13.0" text-anchor="end" class="c-tick">$386</text><line x1="56" y1="10.0" x2="626" y2="10.0" class="c-grid"/><text x="50" y="60.3" text-anchor="end" class="c-tick">$0</text><line x1="56" y1="57.3" x2="626" y2="57.3" class="c-grid"/><text x="50" y="111.0" text-anchor="end" class="c-tick">-$414</text><line x1="56" y1="108.0" x2="626" y2="108.0" class="c-grid"/>
+    <line x1="56" y1="57.3" x2="626" y2="57.3" class="c-zero"/>
+    <path d="M264.6,57.3 L264.6,57.3 L356.8,10.0 L356.8,57.3 Z M356.8,57.3 L356.8,10.0 L448.9,57.3 L448.9,57.3 Z" class="c-wash"/>
+    <line x1="235.4" y1="4" x2="235.4" y2="258" class="c-imp c-ref"/><line x1="263.3" y1="4" x2="263.3" y2="258" class="c-fair c-ref"/><line x1="446.6" y1="4" x2="446.6" y2="258" class="c-imp c-ref"/><line x1="418.7" y1="4" x2="418.7" y2="258" class="c-fair c-ref"/>
+    <polyline points="56.0,108.0 165.7,108.0 356.8,10.0 547.8,108.0 626.0,108.0" class="c-pay"/>
+    <text x="60" y="12" class="c-lab"><tspan class="c-keyimp">▮</tspan> market ±3.7%  <tspan class="c-keyfair">▮</tspan> model ±2.7%</text>
+    <rect x="143.8" y="246.2" width="24.0" height="11.8" rx="3" class="c-loss"/><rect x="172.2" y="234.4" width="24.0" height="23.6" rx="3" class="c-loss"/><rect x="200.7" y="246.2" width="24.0" height="11.8" rx="3" class="c-loss"/><rect x="229.2" y="234.4" width="24.0" height="23.6" rx="3" class="c-loss"/><rect x="257.8" y="246.2" width="24.0" height="11.8" rx="3" class="c-win"/><rect x="257.8" y="220.6" width="24.0" height="23.6" rx="3" class="c-loss"/><rect x="286.2" y="175.4" width="24.0" height="82.6" rx="3" class="c-win"/><rect x="314.8" y="187.2" width="24.0" height="70.8" rx="3" class="c-win"/><rect x="343.2" y="140.0" width="24.0" height="118.0" rx="3" class="c-win"/><rect x="371.8" y="222.6" width="24.0" height="35.4" rx="3" class="c-win"/><rect x="400.2" y="222.6" width="24.0" height="35.4" rx="3" class="c-win"/><rect x="428.8" y="210.8" width="24.0" height="47.2" rx="3" class="c-win"/><rect x="457.3" y="210.8" width="24.0" height="47.2" rx="3" class="c-loss"/><rect x="485.7" y="246.2" width="24.0" height="11.8" rx="3" class="c-loss"/><rect x="514.2" y="246.2" width="24.0" height="11.8" rx="3" class="c-loss"/><rect x="542.8" y="246.2" width="24.0" height="11.8" rx="3" class="c-loss"/>
+    <line x1="56" y1="258" x2="626" y2="258" class="c-axis"/>
+    <line x1="56.0" y1="258" x2="56.0" y2="262" class="c-axis"/><text x="56.0" y="274" text-anchor="middle" class="c-tick">-10%</text><line x1="198.5" y1="258" x2="198.5" y2="262" class="c-axis"/><text x="198.5" y="274" text-anchor="middle" class="c-tick">-5%</text><line x1="341.0" y1="258" x2="341.0" y2="262" class="c-axis"/><text x="341.0" y="274" text-anchor="middle" class="c-tick">0%</text><line x1="483.5" y1="258" x2="483.5" y2="262" class="c-axis"/><text x="483.5" y="274" text-anchor="middle" class="c-tick">+5%</text><line x1="626.0" y1="258" x2="626.0" y2="262" class="c-axis"/><text x="626.0" y="274" text-anchor="middle" class="c-tick">+10%</text>
+    <line class="c-cross" x1="0" y1="4" x2="0" y2="258" visibility="hidden"/>
+    <rect class="c-hit" x="56" y="0" width="570" height="258" fill="transparent"/>
+  </svg>
+  <div class="chart-tip" hidden></div>
+  <script type="application/json" class="chart-data">{"half": 0.1, "spot": 59.66999816894531, "contracts": 2, "knots": [[-0.1, -414.0], [-0.0615, -414.0], [0.00553, 386.0], [0.07257, -414.0], [0.1, -414.0]], "bins": [[-0.1, -0.09, 0, 0], [-0.09, -0.08, 0, 0], [-0.08, -0.07, 0, 0], [-0.07, -0.06, 0, 1], [-0.06, -0.05, 0, 2], [-0.05, -0.04, 0, 1], [-0.04, -0.03, 0, 2], [-0.03, -0.02, 1, 2], [-0.02, -0.01, 7, 0], [-0.01, 0.0, 6, 0], [0.0, 0.01, 10, 0], [0.01, 0.02, 3, 0], [0.02, 0.03, 3, 0], [0.03, 0.04, 4, 0], [0.04, 0.05, 0, 4], [0.05, 0.06, 0, 1], [0.06, 0.07, 0, 1], [0.07, 0.08, 0, 1], [0.08, 0.09, 0, 0], [0.09, 0.1, 0, 0]], "total": 49}</script>
+  <details class="chart-table"><summary>Table view</summary>
+    <p class="muted">Breakevens at -2.7% and +3.8%. Win rate 34/49 past reports.</p>
+    <table><tr><th>Move range</th><th>Wins</th><th>Losses</th><th>P&amp;L at mid</th></tr><tr><td>-7.0% to -6.0%</td><td>0</td><td>1</td><td>-$414</td></tr><tr><td>-6.0% to -5.0%</td><td>0</td><td>2</td><td>-$336</td></tr><tr><td>-5.0% to -4.0%</td><td>0</td><td>1</td><td>-$217</td></tr><tr><td>-4.0% to -3.0%</td><td>0</td><td>2</td><td>-$98</td></tr><tr><td>-3.0% to -2.0%</td><td>1</td><td>2</td><td>$22</td></tr><tr><td>-2.0% to -1.0%</td><td>7</td><td>0</td><td>$141</td></tr><tr><td>-1.0% to +0.0%</td><td>6</td><td>0</td><td>$260</td></tr><tr><td>+0.0% to +1.0%</td><td>10</td><td>0</td><td>$380</td></tr><tr><td>+1.0% to +2.0%</td><td>3</td><td>0</td><td>$273</td></tr><tr><td>+2.0% to +3.0%</td><td>3</td><td>0</td><td>$154</td></tr><tr><td>+3.0% to +4.0%</td><td>4</td><td>0</td><td>$34</td></tr><tr><td>+4.0% to +5.0%</td><td>0</td><td>4</td><td>-$85</td></tr><tr><td>+5.0% to +6.0%</td><td>0</td><td>1</td><td>-$204</td></tr><tr><td>+6.0% to +7.0%</td><td>0</td><td>1</td><td>-$324</td></tr><tr><td>+7.0% to +8.0%</td><td>0</td><td>1</td><td>-$414</td></tr></table>
+  </details>
+</div>
+  <details><summary>Why this trade?</summary><p>The options market is pricing a ±3.7% earnings move for BAC, but over its recent 12 reports it has typically moved about ±2.7%. That makes the move look ≈36% overpriced, so this trade sells that expensive insurance with wings for protection. You collect $386 up front and keep all of it if BAC closes between $58.07 and $61.93 at expiry. No matter how wild the move, you cannot lose more than $414.</p></details>
+</div>
+<div class=card>
+  <div class=cardhead>
+    <span class=tkbig>GOOGL</span>
+    <span class=verb>Sell the move — iron fly</span>
+  </div>
+  <div class=muted>Alphabet Inc. (Class A) · reports Wed Jul 22
+      after the close</div>
+  <div class=when>📅 Place this order on <strong>Wed Jul 22</strong>
+      (any time before the 4pm ET close)</div>
+  <ul class=ticket><li>SELL 2 × GOOGL  $357.5 CALL  exp Fri Jul 24</li><li>SELL 2 × GOOGL  $357.5 PUT  exp Fri Jul 24</li><li>BUY 2 × GOOGL  $365 CALL  exp Fri Jul 24</li><li>BUY 2 × GOOGL  $350 PUT  exp Fri Jul 24</li></ul>
+  <div class=money>Collect ≈ <strong>$1,020</strong> credit · max gain $1,020 · max loss <strong>$480</strong></div>
+  
+<div class="chart" id="ch-GOOGL">
+  <div class="chart-title">If GOOGL moves … you make/lose
+    <span class="muted">(win rate on its last 49 reports: <strong>6/49</strong>)</span></div>
+  <div class="chart-legend">
+    <span><span class="key k-line"></span>P&amp;L at expiry</span>
+    <span><span class="key k-win"></span>past move → win</span>
+    <span><span class="key k-loss"></span>past move → loss</span>
+    <span><span class="key k-imp"></span>market-priced move</span>
+    <span><span class="key k-fair"></span>model fair move</span>
+  </div>
+  <svg viewBox="0 0 640 282" width="100%" tabindex="0" role="img"
+       aria-label="Payoff and historical earnings-move histogram for GOOGL">
+    <text x="50" y="13.0" text-anchor="end" class="c-tick">$1,020</text><line x1="56" y1="10.0" x2="626" y2="10.0" class="c-grid"/><text x="50" y="79.6" text-anchor="end" class="c-tick">$0</text><line x1="56" y1="76.6" x2="626" y2="76.6" class="c-grid"/><text x="50" y="111.0" text-anchor="end" class="c-tick">-$480</text><line x1="56" y1="108.0" x2="626" y2="108.0" class="c-grid"/>
+    <line x1="56" y1="76.6" x2="626" y2="76.6" class="c-zero"/>
+    <path d="M321.9,76.6 L321.9,76.6 L342.3,10.0 L342.3,76.6 Z M342.3,76.6 L342.3,10.0 L362.6,76.6 L362.6,76.6 Z" class="c-wash"/>
+    <line x1="239.8" y1="4" x2="239.8" y2="258" class="c-imp c-ref"/><line x1="265.1" y1="4" x2="265.1" y2="258" class="c-fair c-ref"/><line x1="442.2" y1="4" x2="442.2" y2="258" class="c-imp c-ref"/><line x1="416.9" y1="4" x2="416.9" y2="258" class="c-fair c-ref"/>
+    <polyline points="56.0,108.0 312.4,108.0 342.3,10.0 372.2,108.0 626.0,108.0" class="c-pay"/>
+    <text x="60" y="12" class="c-lab"><tspan class="c-keyimp">▮</tspan> market ±7.1%  <tspan class="c-keyfair">▮</tspan> model ±5.3%</text>
+    <rect x="200.7" y="231.8" width="24.0" height="26.2" rx="3" class="c-loss"/><rect x="229.2" y="218.7" width="24.0" height="39.3" rx="3" class="c-loss"/><rect x="257.8" y="205.6" width="24.0" height="52.4" rx="3" class="c-loss"/><rect x="286.2" y="153.1" width="24.0" height="104.9" rx="3" class="c-loss"/><rect x="314.8" y="231.8" width="24.0" height="26.2" rx="3" class="c-win"/><rect x="314.8" y="203.6" width="24.0" height="26.2" rx="3" class="c-loss"/><rect x="343.2" y="205.6" width="24.0" height="52.4" rx="3" class="c-win"/><rect x="343.2" y="190.4" width="24.0" height="13.1" rx="3" class="c-loss"/><rect x="371.8" y="140.0" width="24.0" height="118.0" rx="3" class="c-loss"/><rect x="400.2" y="179.3" width="24.0" height="78.7" rx="3" class="c-loss"/><rect x="428.8" y="218.7" width="24.0" height="39.3" rx="3" class="c-loss"/><rect x="457.3" y="218.7" width="24.0" height="39.3" rx="3" class="c-loss"/><rect x="485.7" y="244.9" width="24.0" height="13.1" rx="3" class="c-loss"/><rect x="571.2" y="244.9" width="24.0" height="13.1" rx="3" class="c-loss"/>
+    <line x1="56" y1="258" x2="626" y2="258" class="c-axis"/>
+    <line x1="56.0" y1="258" x2="56.0" y2="262" class="c-axis"/><text x="56.0" y="274" text-anchor="middle" class="c-tick">-20%</text><line x1="127.2" y1="258" x2="127.2" y2="262" class="c-axis"/><text x="127.2" y="274" text-anchor="middle" class="c-tick">-15%</text><line x1="198.5" y1="258" x2="198.5" y2="262" class="c-axis"/><text x="198.5" y="274" text-anchor="middle" class="c-tick">-10%</text><line x1="269.8" y1="258" x2="269.8" y2="262" class="c-axis"/><text x="269.8" y="274" text-anchor="middle" class="c-tick">-5%</text><line x1="341.0" y1="258" x2="341.0" y2="262" class="c-axis"/><text x="341.0" y="274" text-anchor="middle" class="c-tick">0%</text><line x1="412.2" y1="258" x2="412.2" y2="262" class="c-axis"/><text x="412.2" y="274" text-anchor="middle" class="c-tick">+5%</text><line x1="483.5" y1="258" x2="483.5" y2="262" class="c-axis"/><text x="483.5" y="274" text-anchor="middle" class="c-tick">+10%</text><line x1="554.8" y1="258" x2="554.8" y2="262" class="c-axis"/><text x="554.8" y="274" text-anchor="middle" class="c-tick">+15%</text><line x1="626.0" y1="258" x2="626.0" y2="262" class="c-axis"/><text x="626.0" y="274" text-anchor="middle" class="c-tick">+20%</text>
+    <line class="c-cross" x1="0" y1="4" x2="0" y2="258" visibility="hidden"/>
+    <rect class="c-hit" x="56" y="0" width="570" height="258" fill="transparent"/>
+  </svg>
+  <div class="chart-tip" hidden></div>
+  <script type="application/json" class="chart-data">{"half": 0.2, "spot": 357.17999267578125, "contracts": 2, "knots": [[-0.2, -480.0], [-0.0201, -480.0], [0.0009, 1020.0], [0.02189, -480.0], [0.2, -480.0]], "bins": [[-0.2, -0.18, 0, 0], [-0.18, -0.16, 0, 0], [-0.16, -0.14, 0, 0], [-0.14, -0.12, 0, 0], [-0.12, -0.1, 0, 0], [-0.1, -0.08, 0, 2], [-0.08, -0.06, 0, 3], [-0.06, -0.04, 0, 4], [-0.04, -0.02, 0, 8], [-0.02, 0.0, 2, 2], [0.0, 0.02, 4, 1], [0.02, 0.04, 0, 9], [0.04, 0.06, 0, 6], [0.06, 0.08, 0, 3], [0.08, 0.1, 0, 3], [0.1, 0.12, 0, 1], [0.12, 0.14, 0, 0], [0.14, 0.16, 0, 0], [0.16, 0.18, 0, 1], [0.18, 0.2, 0, 0]], "total": 49}</script>
+  <details class="chart-table"><summary>Table view</summary>
+    <p class="muted">Breakevens at -1.3% and +1.5%. Win rate 6/49 past reports.</p>
+    <table><tr><th>Move range</th><th>Wins</th><th>Losses</th><th>P&amp;L at mid</th></tr><tr><td>-10.0% to -8.0%</td><td>0</td><td>2</td><td>-$480</td></tr><tr><td>-8.0% to -6.0%</td><td>0</td><td>3</td><td>-$480</td></tr><tr><td>-6.0% to -4.0%</td><td>0</td><td>4</td><td>-$480</td></tr><tr><td>-4.0% to -2.0%</td><td>0</td><td>8</td><td>-$480</td></tr><tr><td>-2.0% to +0.0%</td><td>2</td><td>2</td><td>$242</td></tr><tr><td>+0.0% to +2.0%</td><td>4</td><td>1</td><td>$370</td></tr><tr><td>+2.0% to +4.0%</td><td>0</td><td>9</td><td>-$480</td></tr><tr><td>+4.0% to +6.0%</td><td>0</td><td>6</td><td>-$480</td></tr><tr><td>+6.0% to +8.0%</td><td>0</td><td>3</td><td>-$480</td></tr><tr><td>+8.0% to +10.0%</td><td>0</td><td>3</td><td>-$480</td></tr><tr><td>+10.0% to +12.0%</td><td>0</td><td>1</td><td>-$480</td></tr><tr><td>+16.0% to +18.0%</td><td>0</td><td>1</td><td>-$480</td></tr></table>
+  </details>
+</div>
+  <details><summary>Why this trade?</summary><p>The options market is pricing a ±7.1% earnings move for GOOGL, but over its recent 12 reports it has typically moved about ±5.3%. That makes the move look ≈33% overpriced, so this trade sells that expensive insurance with wings for protection. You collect $1,020 up front and keep all of it if GOOGL closes between $352.40 and $362.60 at expiry. No matter how wild the move, you cannot lose more than $480.</p></details>
+</div>
+<div class=card>
+  <div class=cardhead>
+    <span class=tkbig>C</span>
+    <span class=verb>Sell the move — iron fly</span>
+  </div>
+  <div class=muted>Citigroup · reports Tue Jul 14
+      before the market opens</div>
+  <div class=when>📅 Place this order on <strong>Mon Jul 13</strong>
+      (any time before the 4pm ET close)</div>
+  <ul class=ticket><li>SELL 2 × C  $141 CALL  exp Fri Jul 17</li><li>SELL 2 × C  $141 PUT  exp Fri Jul 17</li><li>BUY 2 × C  $147 CALL  exp Fri Jul 17</li><li>BUY 2 × C  $135 PUT  exp Fri Jul 17</li></ul>
+  <div class=money>Collect ≈ <strong>$778</strong> credit · max gain $778 · max loss <strong>$422</strong></div>
+  
+<div class="chart" id="ch-C">
+  <div class="chart-title">If C moves … you make/lose
+    <span class="muted">(win rate on its last 49 reports: <strong>28/49</strong>)</span></div>
+  <div class="chart-legend">
+    <span><span class="key k-line"></span>P&amp;L at expiry</span>
+    <span><span class="key k-win"></span>past move → win</span>
+    <span><span class="key k-loss"></span>past move → loss</span>
+    <span><span class="key k-imp"></span>market-priced move</span>
+    <span><span class="key k-fair"></span>model fair move</span>
+  </div>
+  <svg viewBox="0 0 640 282" width="100%" tabindex="0" role="img"
+       aria-label="Payoff and historical earnings-move histogram for C">
+    <text x="50" y="13.0" text-anchor="end" class="c-tick">$778</text><line x1="56" y1="10.0" x2="626" y2="10.0" class="c-grid"/><text x="50" y="76.5" text-anchor="end" class="c-tick">$0</text><line x1="56" y1="73.5" x2="626" y2="73.5" class="c-grid"/><text x="50" y="111.0" text-anchor="end" class="c-tick">-$422</text><line x1="56" y1="108.0" x2="626" y2="108.0" class="c-grid"/>
+    <line x1="56" y1="73.5" x2="626" y2="73.5" class="c-zero"/>
+    <path d="M294.4,73.5 L294.4,73.5 L343.7,10.0 L343.7,73.5 Z M343.7,73.5 L343.7,10.0 L392.9,73.5 L392.9,73.5 Z" class="c-wash"/>
+    <line x1="260.0" y1="4" x2="260.0" y2="258" class="c-imp c-ref"/><line x1="285.9" y1="4" x2="285.9" y2="258" class="c-fair c-ref"/><line x1="422.0" y1="4" x2="422.0" y2="258" class="c-imp c-ref"/><line x1="396.1" y1="4" x2="396.1" y2="258" class="c-fair c-ref"/>
+    <polyline points="56.0,108.0 267.7,108.0 343.7,10.0 419.6,108.0 626.0,108.0" class="c-pay"/>
+    <text x="60" y="12" class="c-lab"><tspan class="c-keyimp">▮</tspan> market ±4.5%  <tspan class="c-keyfair">▮</tspan> model ±3.1%</text>
+    <rect x="204.3" y="242.3" width="24.0" height="15.7" rx="3" class="c-loss"/><rect x="239.9" y="226.5" width="24.0" height="31.5" rx="3" class="c-loss"/><rect x="275.6" y="250.1" width="24.0" height="7.9" rx="3" class="c-win"/><rect x="275.6" y="216.7" width="24.0" height="31.5" rx="3" class="c-loss"/><rect x="311.2" y="140.0" width="24.0" height="118.0" rx="3" class="c-win"/><rect x="346.8" y="179.3" width="24.0" height="78.7" rx="3" class="c-win"/><rect x="382.4" y="242.3" width="24.0" height="15.7" rx="3" class="c-win"/><rect x="382.4" y="193.1" width="24.0" height="47.2" rx="3" class="c-loss"/><rect x="418.1" y="234.4" width="24.0" height="23.6" rx="3" class="c-loss"/><rect x="453.7" y="250.1" width="24.0" height="7.9" rx="3" class="c-loss"/><rect x="560.6" y="250.1" width="24.0" height="7.9" rx="3" class="c-loss"/>
+    <line x1="56" y1="258" x2="626" y2="258" class="c-axis"/>
+    <line x1="73.8" y1="258" x2="73.8" y2="262" class="c-axis"/><text x="73.8" y="274" text-anchor="middle" class="c-tick">-15%</text><line x1="162.9" y1="258" x2="162.9" y2="262" class="c-axis"/><text x="162.9" y="274" text-anchor="middle" class="c-tick">-10%</text><line x1="251.9" y1="258" x2="251.9" y2="262" class="c-axis"/><text x="251.9" y="274" text-anchor="middle" class="c-tick">-5%</text><line x1="341.0" y1="258" x2="341.0" y2="262" class="c-axis"/><text x="341.0" y="274" text-anchor="middle" class="c-tick">0%</text><line x1="430.1" y1="258" x2="430.1" y2="262" class="c-axis"/><text x="430.1" y="274" text-anchor="middle" class="c-tick">+5%</text><line x1="519.1" y1="258" x2="519.1" y2="262" class="c-axis"/><text x="519.1" y="274" text-anchor="middle" class="c-tick">+10%</text><line x1="608.2" y1="258" x2="608.2" y2="262" class="c-axis"/><text x="608.2" y="274" text-anchor="middle" class="c-tick">+15%</text>
+    <line class="c-cross" x1="0" y1="4" x2="0" y2="258" visibility="hidden"/>
+    <rect class="c-hit" x="56" y="0" width="570" height="258" fill="transparent"/>
+  </svg>
+  <div class="chart-tip" hidden></div>
+  <script type="application/json" class="chart-data">{"half": 0.16, "spot": 140.7899932861328, "contracts": 2, "knots": [[-0.16, -422.0], [-0.04113, -422.0], [0.00149, 778.0], [0.04411, -422.0], [0.16, -422.0]], "bins": [[-0.16, -0.14, 0, 0], [-0.14, -0.12, 0, 0], [-0.12, -0.1, 0, 0], [-0.1, -0.08, 0, 0], [-0.08, -0.06, 0, 2], [-0.06, -0.04, 0, 4], [-0.04, -0.02, 1, 4], [-0.02, 0.0, 15, 0], [0.0, 0.02, 10, 0], [0.02, 0.04, 2, 6], [0.04, 0.06, 0, 3], [0.06, 0.08, 0, 1], [0.08, 0.1, 0, 0], [0.1, 0.12, 0, 0], [0.12, 0.14, 0, 1], [0.14, 0.16, 0, 0]], "total": 49}</script>
+  <details class="chart-table"><summary>Table view</summary>
+    <p class="muted">Breakevens at -2.6% and +2.9%. Win rate 28/49 past reports.</p>
+    <table><tr><th>Move range</th><th>Wins</th><th>Losses</th><th>P&amp;L at mid</th></tr><tr><td>-8.0% to -6.0%</td><td>0</td><td>2</td><td>-$422</td></tr><tr><td>-6.0% to -4.0%</td><td>0</td><td>4</td><td>-$422</td></tr><tr><td>-4.0% to -2.0%</td><td>1</td><td>4</td><td>-$109</td></tr><tr><td>-2.0% to +0.0%</td><td>15</td><td>0</td><td>$454</td></tr><tr><td>+0.0% to +2.0%</td><td>10</td><td>0</td><td>$538</td></tr><tr><td>+2.0% to +4.0%</td><td>2</td><td>6</td><td>-$25</td></tr><tr><td>+4.0% to +6.0%</td><td>0</td><td>3</td><td>-$422</td></tr><tr><td>+6.0% to +8.0%</td><td>0</td><td>1</td><td>-$422</td></tr><tr><td>+12.0% to +14.0%</td><td>0</td><td>1</td><td>-$422</td></tr></table>
+  </details>
+</div>
+  <details><summary>Why this trade?</summary><p>The options market is pricing a ±4.5% earnings move for C, but over its recent 12 reports it has typically moved about ±3.1%. That makes the move look ≈47% overpriced, so this trade sells that expensive insurance with wings for protection. You collect $778 up front and keep all of it if C closes between $137.11 and $144.89 at expiry. No matter how wild the move, you cannot lose more than $422.</p></details>
+</div></div>
 <h2>Ranked (passing liquidity screen)</h2>
 <div class=tablewrap><table><tr><th>Ticker</th><th>Earnings</th><th>Implied (mid)</th><th>Fair ± CI (80%)</th><th>Edge</th><th>Score</th><th>Structure</th><th>Max gain / loss</th><th>Spread / edge</th><th>Conf</th><th>n</th><th>Flags</th></tr><tr><td class=tk><strong>NOW</strong><div class=muted>ServiceNow</div></td><td>2026-07-22 <span class=muted>AMC</span></td><td class=num>13.1% <span class=muted>ask 13.4%</span></td><td class=num>8.2% <span class=muted>[6.8%–9.6%]</span></td><td class=num>59%</td><td class=num>+3.74</td><td>iron fly<div class=muted>short 108 straddle @ bid, long 99P / 117C @ ask</div></td><td class=num>$655 / $245</td><td class=num>10%</td><td class=num>0.83</td><td class=num>12</td><td class=flags></td></tr><tr><td class=tk><strong>INTC</strong><div class=muted>Intel</div></td><td>2026-07-23 <span class=muted>AMC</span></td><td class=num>15.9% <span class=muted>ask 16.2%</span></td><td class=num>9.6% <span class=muted>[7.7%–11.6%]</span></td><td class=num>65%</td><td class=num>+3.38</td><td>iron fly<div class=muted>short 110 straddle @ bid, long 100P / 120C @ ask</div></td><td class=num>$760 / $240</td><td class=num>10%</td><td class=num>0.81</td><td class=num>12</td><td class=flags></td></tr><tr><td class=tk><strong>BAC</strong><div class=muted>Bank of America</div></td><td>2026-07-14 <span class=muted>BMO</span></td><td class=num>3.7% <span class=muted>ask 3.8%</span></td><td class=num>2.7% <span class=muted>[2.3%–3.1%]</span></td><td class=num>36%</td><td class=num>+2.55</td><td>iron fly<div class=muted>short 60 straddle @ bid, long 56P / 64C @ ask</div></td><td class=num>$193 / $207</td><td class=num>17%</td><td class=num>0.83</td><td class=num>12</td><td class=flags></td></tr><tr><td class=tk><strong>GOOGL</strong><div class=muted>Alphabet Inc. (Class A)</div></td><td>2026-07-22 <span class=muted>AMC</span></td><td class=num>7.1% <span class=muted>ask 7.3%</span></td><td class=num>5.3% <span class=muted>[4.4%–6.2%]</span></td><td class=num>33%</td><td class=num>+2.12</td><td>iron fly<div class=muted>short 357.5 straddle @ bid, long 350P / 365C @ ask</div></td><td class=num>$510 / $240</td><td class=num>26%</td><td class=num>0.83</td><td class=num>12</td><td class=flags></td></tr><tr><td class=tk><strong>GOOG</strong><div class=muted>Alphabet Inc. (Class C)</div></td><td>2026-07-22 <span class=muted>AMC</span></td><td class=num>7.0% <span class=muted>ask 7.2%</span></td><td class=num>5.3% <span class=muted>[4.4%–6.2%]</span></td><td class=num>32%</td><td class=num>+2.04</td><td>iron fly<div class=muted>short 355 straddle @ bid, long 347.5P / 362.5C @ ask</div></td><td class=num>$530 / $220</td><td class=num>24%</td><td class=num>0.83</td><td class=num>12</td><td class=flags></td></tr><tr><td class=tk><strong>HCA</strong><div class=muted>HCA Healthcare</div></td><td>2026-07-24 <span class=muted>BMO</span></td><td class=num>12.6% <span class=muted>ask 13.2%</span></td><td class=num>4.9% <span class=muted>[4.4%–5.5%]</span></td><td class=num>155%</td><td class=num>+1.65</td><td>no affordable structure</td><td class=num>— / —</td><td class=num>16%</td><td class=num>0.83</td><td class=num>12</td><td class=flags>wide market</td></tr><tr><td class=tk><strong>C</strong><div class=muted>Citigroup</div></td><td>2026-07-14 <span class=muted>BMO</span></td><td class=num>4.5% <span class=muted>ask 4.8%</span></td><td class=num>3.1% <span class=muted>[2.7%–3.5%]</span></td><td class=num>47%</td><td class=num>+1.41</td><td>iron fly<div class=muted>short 141 straddle @ bid, long 135P / 147C @ ask</div></td><td class=num>$389 / $211</td><td class=num>29%</td><td class=num>0.79</td><td class=num>12</td><td class=flags>wide market</td></tr><tr><td class=tk><strong>NFLX</strong><div class=muted>Netflix</div></td><td>2026-07-16 <span class=muted>AMC</span></td><td class=num>7.9% <span class=muted>ask 8.0%</span></td><td class=num>7.0% <span class=muted>[5.9%–8.1%]</span></td><td class=num>12%</td><td class=num>+0.85</td><td>no trade</td><td class=num>— / —</td><td class=num>24%</td><td class=num>0.83</td><td class=num>12</td><td class=flags></td></tr><tr><td class=tk><strong>GE</strong><div class=muted>GE Aerospace</div></td><td>2026-07-16 <span class=muted>BMO</span></td><td class=num>5.4% <span class=muted>ask 5.7%</span></td><td class=num>5.3% <span class=muted>[4.6%–6.0%]</span></td><td class=num>3%</td><td class=num>+0.08</td><td>no trade</td><td class=num>— / —</td><td class=num>345%</td><td class=num>0.83</td><td class=num>12</td><td class=flags>wide market</td></tr></table></div>
 <h2>Screened out (spread &gt; 10% of straddle, OI &lt; 500, or dead quotes)</h2>
