@@ -122,17 +122,26 @@ def _series_for_tag(units_entries: list[dict], kind: str, period: str) -> dict[s
 
 
 def resolve_concept(facts: dict, spec: dict, period: str) -> tuple[str | None, dict[str, float]]:
-    """First candidate tag with data wins; returns (tag, {end: value})."""
+    """Merge candidate tags per-YEAR (higher priority wins on collisions).
+
+    Filers switch tags mid-history (e.g. LongTermDebtNoncurrent stops, plain
+    LongTermDebt continues) — taking only the first tag with data leaves
+    holes, so lower-priority tags fill years the primary tag lacks.
+    Returns (primary tag used, {period_end: value}).
+    """
     ns = facts.get(spec.get("namespace", "us-gaap"), {})
-    for tag in spec["tags"]:
+    combined: dict[str, float] = {}
+    primary = None
+    for tag in reversed(spec["tags"]):  # lowest priority first; later overwrite
         node = ns.get(tag)
         if not node:
             continue
         entries = (node.get("units") or {}).get(spec["unit"], [])
         series = _series_for_tag(entries, spec["kind"], period)
         if series:
-            return tag, series
-    return None, {}
+            combined.update(series)
+            primary = tag  # ends at the highest-priority tag with data
+    return primary, combined
 
 
 def parse_company(payload: dict, ticker: str, years: int = config.FUNDAMENTAL_YEARS):

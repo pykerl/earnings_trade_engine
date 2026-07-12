@@ -35,9 +35,20 @@ def derive_series(annual: pd.DataFrame) -> pd.DataFrame:
     """Add derived per-year columns to one company's FY rows (sorted)."""
     df = annual.sort_values("period_end").reset_index(drop=True).copy()
 
-    if "gross_profit" not in df or df["gross_profit"].isna().all():
-        df["gross_profit"] = df["revenue"] - df.get("cost_of_revenue", np.nan)
+    if "gross_profit" not in df:
+        df["gross_profit"] = np.nan
+    # per-year fallback: filers often report GrossProfit sporadically (COST)
+    df["gross_profit"] = df["gross_profit"].fillna(
+        df["revenue"] - df.get("cost_of_revenue", pd.Series(np.nan, index=df.index))
+    )
     df["gross_margin"] = df["gross_profit"] / df["revenue"]
+    # EBIT fallback for filers with no OperatingIncomeLoss in XBRL (JNJ):
+    # pretax income + interest expense, the standard reconstruction.
+    ebit_proxy = df.get("pretax_income", pd.Series(np.nan, index=df.index)) + df.get(
+        "interest_expense", pd.Series(np.nan, index=df.index)
+    ).fillna(0)
+    df["op_income_derived"] = df["operating_income"].isna() & ebit_proxy.notna()
+    df["operating_income"] = df["operating_income"].fillna(ebit_proxy)
     df["op_margin"] = df["operating_income"] / df["revenue"]
 
     df["fcf"] = df["cfo"] - df["capex"]
@@ -72,6 +83,24 @@ def _cagr(series: pd.Series, years: int) -> float:
     if first <= 0 or last <= 0 or n == 0:
         return np.nan
     return (last / first) ** (1 / n) - 1
+
+
+def _share_cagr(series: pd.Series, years: int) -> float:
+    """Share-count CAGR with a split-discontinuity guard.
+
+    As-filed share counts are not restated across stock splits in old
+    filings (AAPL 2017: 5.25B, 2018 comparative: 20.0B). Any year-over-year
+    jump beyond ±40% is treated as a split artifact and the series is
+    truncated to start after the LAST such discontinuity.
+    """
+    s = series.dropna()
+    if len(s) < 2:
+        return np.nan
+    ratios = (s / s.shift(1)).dropna()
+    breaks = ratios[(ratios > 1.4) | (ratios < 1 / 1.4)]
+    if len(breaks):
+        s = s.loc[breaks.index[-1]:]
+    return _cagr(s, years)
 
 
 def _trend(series: pd.Series) -> float:
@@ -176,7 +205,8 @@ def summarize_company(
         "interest_coverage": float(coverage) if np.isfinite(coverage) else np.nan,
         "altman_z_coarse": float(z) if np.isfinite(z) else np.nan,
         # management / capital allocation
-        "share_cagr_10y": _cagr(df["shares_diluted"], 10),
+        "share_cagr_10y": _share_cagr(df["shares_diluted"], 10),
+        "op_income_derived": bool(df["op_income_derived"].tail(3).any()),
         "sbc_fcf_10y": float(sbc_sum / fcf_sum) if fcf_sum > 0 else np.nan,
         "buyback_timing": _buyback_timing(df, year_caps),
         "dividend_years_10y": int((df["dividends_paid"].tail(10) > 0).sum()),
