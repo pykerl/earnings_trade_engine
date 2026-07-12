@@ -140,8 +140,18 @@ def filing_record_flags(submissions: dict, today: date | None = None) -> dict:
 
 
 def going_concern_hit(cik: int, session, today: date | None = None) -> bool:
-    """EDGAR full-text: 'substantial doubt' + 'going concern' in recent 10-Ks."""
+    """EDGAR full-text: 'substantial doubt' + 'going concern' in recent 10-Ks.
+
+    Cached for 7 days per CIK — the answer changes at most once per 10-K.
+    """
     today = today or date.today()
+    cache = config.EDGAR_DIR / "fts_cache" / f"gc_{cik:010d}.json"
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    if cache.exists() and time.time() - cache.stat().st_mtime < SUBMISSIONS_CACHE_DAYS * 86400:
+        try:
+            return bool(json.loads(cache.read_text())["hit"])
+        except (ValueError, KeyError):
+            pass
     resp = edgar_get(
         session, FTS_URL,
         params={
@@ -156,9 +166,11 @@ def going_concern_hit(cik: int, session, today: date | None = None) -> bool:
     if resp is None:
         return False
     try:
-        return (resp.json().get("hits", {}).get("total", {}) or {}).get("value", 0) > 0
+        hit = (resp.json().get("hits", {}).get("total", {}) or {}).get("value", 0) > 0
     except ValueError:
         return False
+    cache.write_text(json.dumps({"hit": hit}))
+    return hit
 
 
 # ------------------------------------------------------------------ combine --
