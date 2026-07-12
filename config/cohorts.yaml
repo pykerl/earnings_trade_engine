@@ -1,0 +1,63 @@
+# WSB annual cohorts — ground truth for the Stage A autopsy (plan_reddit_growth §2).
+# Every list carries its verification status and sources. Prefer honesty over
+# completeness: unverified claims are marked, never silently assumed.
+
+cohorts:
+  wsb_2026_index:
+    description: "WallStreetBets 2026 Index — ten stocks chosen by the sub"
+    publication_date: "2026-01-02"
+    date_precision: >
+      Thread published early January 2026; press coverage dated January 2026
+      (Benzinga article path /26/01/). Exact thread day unverified from this
+      environment (reddit.com unreachable); entry-lag sensitivity in the
+      autopsy bounds the impact of +/- a few days.
+    constituents_verified: true
+    tickers: [ASTS, RKLB, GOOGL, AMZN, NBIS, RDDT, MU, IREN, TSLA, PLTR]
+    sources:
+      - url: "https://www.benzinga.com/trading-ideas/long-ideas/26/01/50103263/wallstreetbets-2026-index-top-10-stocks-chosen-by-retail"
+        date: "2026-01"
+        note: "Benzinga: 'WallStreetBets 2026 Index — Top 10 Stocks Chosen By Retail'; full list matches"
+      - url: "https://finviz.com/news/285484/wallstreetbets-2026-index-top-10-stocks-chosen-by-retail"
+        date: "2026-01"
+        note: "Finviz syndication of the same list"
+
+  wsb_2026_upvotes:
+    description: "2026 upvote-tally variant (adds POET, SOFI, PATH per plan §1)"
+    publication_date: "2026-01-02"
+    date_precision: "same thread window as the index variant"
+    constituents_verified: true
+    tickers: [ASTS, RKLB, GOOGL, AMZN, NBIS, RDDT, MU, IREN, TSLA, PLTR, POET, SOFI, PATH]
+    sources:
+      - url: "https://altindex.com/news/wallstreetbets-top-stock-picks-next-year"
+        date: "2026-01"
+        note: "AltIndex: portfolio 'created by tallying the most upvoted stock picks'; AMZN top spot"
+      - url: "plan_reddit_growth.md"
+        date: "2026-07"
+        note: "plan-provided variant list (POET, SOFI, PATH); thread-level verification pending Reddit access"
+
+  wsb_2025:
+    description: "WSB 2025 crowd portfolio (top-voted basket; press-reported ~76% for 2025)"
+    publication_date: "2025-01-02"
+    date_precision: >
+      Assumed early January 2025 to mirror the 2026 process; the 2025 thread
+      itself is not reachable from this environment. Treat all 2025 numbers
+      as PARTIAL-COHORT estimates.
+    constituents_verified: false
+    verification_note: >
+      Press confirms the survey existed, the upvote-tally methodology, and a
+      ~76% cumulative 2025 return, and names TSLA, PLTR, HOOD, NVDA as
+      retail 'long-term winners' with ASTS prominent (+260% in 2025). No
+      accessible free source enumerates the full list; reddit.com is blocked
+      from this sandbox. The autopsy runs this PARTIAL press-attested cohort,
+      clearly labeled; replace with the full thread list when available.
+    tickers: [TSLA, PLTR, HOOD, NVDA, ASTS]
+    sources:
+      - url: "https://altindex.com/news/wallstreetbets-top-stock-picks-next-year"
+        date: "2026-01"
+        note: "'crowd-sourced stock portfolio that delivered a 76% return in 2025 ... tallying the most upvoted stock picks'"
+      - url: "https://finviz.com/news/267324/5-stocks-retail-investors-are-betting-on-for-2026"
+        date: "2025-12"
+        note: "names TSLA, PLTR, HOOD, NVDA as retail long-term winners; ASTS +260% in 2025"
+
+benchmarks: [SPY, QQQ]
+entry_lags_days: [0, 7, 30, 90]
