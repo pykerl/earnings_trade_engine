@@ -1,4 +1,4 @@
-# NVT — nVent Electric · constraint thesis memo (2026-07-13)
+# MOD — Modine · constraint thesis memo (2026-07-13)
 
 > Auto-drafted by the Reddit-growth engine for human review. Paper research
 > only, not advice. Reddit is the scout here, never the signal.
@@ -18,7 +18,7 @@ Evidence:
 
 
 ## 3. Why this node
-liquid cooling + electrical enclosures share [FOR HUMAN REVIEW] **[FOR HUMAN REVIEW]** — verify revenue exposure against the
+datacenter cooling ~1/3 of revenue and growing fastest [FOR HUMAN REVIEW] **[FOR HUMAN REVIEW]** — verify revenue exposure against the
 latest 10-K segment data; identify competing suppliers and capacity adds.
 Listing: US. 
 
@@ -31,13 +31,13 @@ accrues to the constraint owner while the constraint binds.
 ## 5. Validation gate results
 - Evidence gate (≥2 dated sources on the node): **PASS**
 - Survivability: runway 99 quarters — **PASS**; going-concern scan: **clean**
-- Quality of growth: revenue growth 29.5% + FCF margin 9.6% = rule-of-40 39 — **PASS**; gross-margin trend **PASS**; leverage **PASS**
-- Dilution: share CAGR -1.1%/yr, SBC 1.0% of revenue — **PASS**
+- Quality of growth: revenue growth 23.1% + FCF margin 3.3% = rule-of-40 26 — **PASS**; gross-margin trend **PASS**; leverage **PASS**
+- Dilution: share CAGR +1.3%/yr, SBC 0.7% of revenue — **PASS**
 
 ## 6. Structure & sizing
 Sleeve: **quiet_equity** — direct equity in the quiet constraint owner.
 Max position: $500 (5% of the $10k research
-book). Barbell expression: long NVT vs structurally underweight VRT — captures 'alpha migrates upstream' and hedges theme drawdown
+book). Barbell expression: long MOD vs structurally underweight VRT — captures 'alpha migrates upstream' and hedges theme drawdown
 
 ## 7. Pre-mortem & exit conditions (pre-registered)
 These falsify the constraint thesis and ARE the exit triggers:

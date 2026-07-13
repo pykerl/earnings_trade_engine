@@ -89,6 +89,7 @@ def test_build_ideas_portfolio_rules():
     assert "FAILED" not in set(ideas["ticker"])
     # max 2 per theme
     assert (ideas.groupby("theme").size() <= construct.MAX_PER_THEME).all()
+    assert ideas["ticker"].is_unique, "a ticker in two nodes is still one position"
     # max 3 themes
     assert ideas["theme"].nunique() <= construct.MAX_THEMES
     # pure plays outrank diversified within the same node

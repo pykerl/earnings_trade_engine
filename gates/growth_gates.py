@@ -33,7 +33,8 @@ log = logging.getLogger("ete.growth_gates")
 CONSTRAINT_MAP = config.REPO_ROOT / "config" / "constraint_map.yaml"
 
 RUNWAY_MIN_QUARTERS = 8
-RULE_OF_40_MIN = 0.30       # applied loosely per plan ("rule-of-40 style")
+RULE_OF_40_MIN = 0.15       # "applied loosely" (plan §4): constraint owners are
+                            # industrials, not SaaS — growth+FCF margin >= 15%
 DILUTION_MAX_CAGR = 0.04    # growth names get more slack than value's 2%
 SBC_REV_MAX = 0.15          # SBC as % of REVENUE for growth names
 

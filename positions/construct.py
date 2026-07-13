@@ -96,7 +96,11 @@ def build_ideas(
         * (1 - eligible["crowding_z"].clip(-2, 2) / 4)
         * np.where(eligible["kind"] == "pure_play", 1.15, 1.0)
     )
-    eligible = eligible.sort_values("idea_score", ascending=False)
+    eligible = (
+        eligible.sort_values("idea_score", ascending=False)
+        .drop_duplicates("ticker")  # a ticker in two nodes is still one position
+    )
+    eligible["velocity_mode"] = eligible["velocity_mode"].fillna("no mention data")
 
     picks, theme_counts = [], {}
     for _, r in eligible.iterrows():
