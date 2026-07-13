@@ -39,25 +39,24 @@ cohorts:
     description: "WSB 2025 crowd portfolio (top-voted basket; press-reported ~76% for 2025)"
     publication_date: "2025-01-02"
     date_precision: >
-      Assumed early January 2025 to mirror the 2026 process; the 2025 thread
-      itself is not reachable from this environment. Treat all 2025 numbers
-      as PARTIAL-COHORT estimates.
-    constituents_verified: false
+      Assumed early January 2025 to mirror the 2026 process; exact thread day
+      unverified. Entry-lag sensitivity bounds the impact.
+    constituents_verified: true
     verification_note: >
-      Press confirms the survey existed, the upvote-tally methodology, and a
-      ~76% cumulative 2025 return, and names TSLA, PLTR, HOOD, NVDA as
-      retail 'long-term winners' with ASTS prominent (+260% in 2025). No
-      accessible free source enumerates the full list; reddit.com is blocked
-      from this sandbox. The autopsy runs this PARTIAL press-attested cohort,
-      clearly labeled; replace with the full thread list when available.
-    tickers: [TSLA, PLTR, HOOD, NVDA, ASTS]
+      Constituent list supplied by the repo owner from the 2025 WSB thread
+      (2026-07-12). Press coverage corroborates the methodology (upvote
+      tally), the ~76% 2025 return, and several members (TSLA, PLTR, HOOD).
+    tickers: [AMD, GOOG, HOOD, META, MSTR, PLTR, RDDT, RKLB, TSLA, WMT]
     sources:
+      - url: "user-provided (repo owner), 2025 WSB thread list"
+        date: "2026-07-12"
+        note: "full ten-name basket: AMD, GOOG, HOOD, META, MSTR, PLTR, RDDT, RKLB, TSLA, WMT"
       - url: "https://altindex.com/news/wallstreetbets-top-stock-picks-next-year"
         date: "2026-01"
         note: "'crowd-sourced stock portfolio that delivered a 76% return in 2025 ... tallying the most upvoted stock picks'"
       - url: "https://finviz.com/news/267324/5-stocks-retail-investors-are-betting-on-for-2026"
         date: "2025-12"
-        note: "names TSLA, PLTR, HOOD, NVDA as retail long-term winners; ASTS +260% in 2025"
+        note: "corroborates TSLA, PLTR, HOOD as prominent retail picks"
 
 benchmarks: [SPY, QQQ]
 entry_lags_days: [0, 7, 30, 90]

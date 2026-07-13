@@ -112,7 +112,8 @@ def test_cohorts_yaml_loads_with_verification_flags():
     c = cfg["cohorts"]
     assert c["wsb_2026_index"]["constituents_verified"] is True
     assert len(c["wsb_2026_index"]["tickers"]) == 10
-    assert c["wsb_2025"]["constituents_verified"] is False
+    assert c["wsb_2025"]["constituents_verified"] is True
+    assert len(c["wsb_2025"]["tickers"]) == 10
     assert "verification_note" in c["wsb_2025"]
     assert set(c["wsb_2026_upvotes"]["tickers"]) >= {"POET", "SOFI", "PATH"}
     for cohort in c.values():

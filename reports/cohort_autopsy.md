@@ -1,4 +1,4 @@
-# WSB cohort autopsy — Stage A (2026-07-12)
+# WSB cohort autopsy — Stage A (2026-07-13)
 
 Was the crowd's return skill, beta, or momentum? Equal-weight buy-and-hold
 from publication date, adjusted closes (yfinance), Fama-French daily factors.
@@ -83,37 +83,40 @@ from publication date, adjusted closes (yfinance), Fama-French daily factors.
 
 ## wsb_2025 — WSB 2025 crowd portfolio (top-voted basket; press-reported ~76% for 2025)
 
-> ⚠️ **PARTIAL COHORT — constituents unverified.** Press confirms the survey existed, the upvote-tally methodology, and a ~76% cumulative 2025 return, and names TSLA, PLTR, HOOD, NVDA as retail 'long-term winners' with ASTS prominent (+260% in 2025). No accessible free source enumerates the full list; reddit.com is blocked from this sandbox. The autopsy runs this PARTIAL press-attested cohort, clearly labeled; replace with the full thread list when available.
-
-- Published: 2025-01-02 · names: TSLA, PLTR, HOOD, NVDA, ASTS
-- **Total return since publication: 110.3%** · SPY: 31.3% · QQQ: 43.3%
-- Max drawdown: -38.5% · hit rate: 100% of names positive
-- Contribution concentration: top 2 (ASTS, HOOD) supplied 84.5pts of the 110.3% EW return (77% of it)
+- Published: 2025-01-02 · names: AMD, GOOG, HOOD, META, MSTR, PLTR, RDDT, RKLB, TSLA, WMT
+- **Total return since publication: 92.4%** · SPY: 31.3% · QQQ: 43.3%
+- Max drawdown: -35.5% · hit rate: 90% of names positive
+- Contribution concentration: top 2 (AMD, RKLB) supplied 58.7pts of the 92.4% EW return (64% of it)
 
 ### Per-name returns since publication
 
 | Ticker | Return |
 |---|---|
-| ASTS | 238.8% |
+| AMD | 362.5% |
+| RKLB | 224.7% |
 | HOOD | 183.9% |
+| GOOG | 87.2% |
 | PLTR | 68.6% |
-| NVDA | 52.8% |
+| WMT | 28.3% |
+| RDDT | 17.7% |
+| META | 12.2% |
 | TSLA | 7.5% |
+| MSTR | -68.5% |
 
 ### Entry-lag sensitivity (buy N days after publication)
 
 | Lag | Cohort | SPY | QQQ |
 |---|---|---|---|
-| 0d | 110.3% | 31.3% | 43.3% |
-| 7d | 110.9% | 32.3% | 44.1% |
-| 30d | 99.2% | 28.5% | 41.1% |
-| 90d | 114.0% | 35.6% | 53.3% |
+| 0d | 92.4% | 31.3% | 43.3% |
+| 7d | 91.7% | 32.3% | 44.1% |
+| 30d | 76.0% | 28.5% | 41.1% |
+| 90d | 118.9% | 35.6% | 53.3% |
 
 ### Factor decomposition (daily, Mkt-RF + Momentum)
 
 - Window: 351 trading days, factor data through 2026-05-29
-- Market beta: **2.26** · momentum beta: **0.67** · R²: 0.57
-- **Residual alpha: 31.6%/yr** — the only number that can be called picking skill
+- Market beta: **1.91** · momentum beta: **0.53** · R²: 0.70
+- **Residual alpha: 20.8%/yr** — the only number that can be called picking skill
 
 ## Reading guide
 
