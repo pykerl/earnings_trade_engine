@@ -1,0 +1,186 @@
+# Constraint map — curated, citation-backed supply-bottleneck graph
+# (plan_reddit_growth §3.B2). DRAFT for human review — checkpoint 2.
+#
+# Rules: every claim carries a dated source; anything without one is marked
+# needs_evidence: true and is EXCLUDED from gating. Revenue-exposure figures
+# are rough estimates for triage, marked for human review — they are inputs
+# to research, not outputs of it. Researched 2026-07-12/13 from this sandbox.
+
+nodes:
+  memory_hbm:
+    theme: memory
+    constraint: >
+      HBM (and increasingly commodity DRAM/NAND) capacity is sold out through
+      2026 across all three manufacturers; new fabs and packaging plants offer
+      no material relief before 2027-2028. The crowd already owns the obvious
+      expression (MU, +211% since the 2026 cohort published) — the open
+      question is which adjacent nodes (test, packaging/inspection equipment,
+      materials) remain quieter.
+    confidence: high
+    evidence:
+      - claim: "SK hynix DRAM/NAND/HBM capacity sold out through 2026; slots reserved by customers"
+        source: "https://www.techspot.com/news/110058-sk-hynix-completely-sells-out-semiconductor-supply-ai.html"
+        date: "2025-10"
+      - claim: "SK hynix F-1 risk factors: advanced-packaging materials/component suppliers 'more limited' than for traditional memory — supplier concentration is disclosed, sworn risk"
+        source: "https://www.sec.gov/Archives/edgar/data/0002120882/000119312526289345/d32785df1a.htm"
+        date: "2026"
+      - claim: "SK hynix committing $30B+ incl. $15B US advanced packaging plant; Micron FY2026 capex raised to $20B — relief lands 2027+"
+        source: "https://enkiai.com/data-center/hbm-supply-crisis-2026-the-bottleneck-redefining-ai/"
+        date: "2026"
+    crowded_names: [MU]
+    pure_plays:
+      - {ticker: CAMT, name: "Camtek", exposure: "inspection/metrology for advanced packaging — majority of revenue [FOR HUMAN REVIEW]", listing: US}
+      - {ticker: ONTO, name: "Onto Innovation", exposure: "process control incl. advanced packaging — significant share [FOR HUMAN REVIEW]", listing: US}
+      - {ticker: BESIY, name: "BE Semiconductor", exposure: "hybrid bonding / packaging equipment leader", listing: "US ADR (thin) / AMS:BESI"}
+    diversified:
+      - {ticker: TER, name: "Teradyne", exposure: "memory test a minority of semi-test revenue [FOR HUMAN REVIEW]"}
+      - {ticker: ATEYY, name: "Advantest", exposure: "memory/HBM test leader; ADR", listing: "US ADR / 6857.T"}
+    capacity_watch: "SK hynix US packaging plant + M15X timelines; Samsung HBM4 qualification; Micron Idaho fabs"
+
+  dc_power:
+    theme: ai_dc_power
+    constraint: >
+      Electricity delivery is the binding constraint on the AI datacenter
+      build-out: gas-turbine slots, large power transformers, and MV
+      switchgear all carry multi-year backlogs, and grid interconnection
+      queues run ~5 years median. A third to half of planned 2026 US
+      datacenter capacity is reportedly delayed on electrical equipment.
+      First-order names (GEV, VST, CEG) are already found; quieter nodes are
+      switchgear/power-room pure-plays and electrical construction.
+    confidence: high
+    evidence:
+      - claim: "GE Vernova gas-turbine backlog hit 100 GW (slot reservations 83->100 GW); guides 110+ GW by year-end 2026; datacenters ~20% of backlog"
+        source: "https://www.utilitydive.com/news/ge-vernova-gas-turbine-backlog-hits-100-gw-as-prices-rise/818332/"
+        date: "2026-04"
+      - claim: "GE Vernova Q1-2026 8-K: Electrification equipment orders for datacenters $2.4B in the quarter, exceeding all of prior year"
+        source: "https://www.sec.gov/Archives/edgar/data/0001996810/000199681026000063/gevpressrelease1q26.htm"
+        date: "2026-04-22"
+      - claim: "US large-power-transformer lead times extended to 3-5 years; average ~128 weeks"
+        source: "https://pv-magazine-usa.com/2026/05/11/u-s-transformer-market-faces-severe-supply-constraints-as-lead-times-extend-to-four-years/"
+        date: "2026-05-11"
+      - claim: "30-50% of planned 2026 datacenter openings estimated delayed/canceled on transformer + switchgear shortages"
+        source: "https://chargeduppro.com/post/data-center-transformer-shortage-power-bottleneck-industrial-property-2026"
+        date: "2026"
+      - claim: "Interconnection queues ~2,600 GW; median time to commercial operation approaching five years"
+        source: "https://enkiai.com/ai-market-intelligence/grid-interconnection-delays-2026-a-threat-to-us-energy/"
+        date: "2026"
+    crowded_names: [GEV, VST, CEG]
+    pure_plays:
+      - {ticker: POWL, name: "Powell Industries", exposure: "custom switchgear / power control rooms — core business", listing: US}
+      - {ticker: MYRG, name: "MYR Group", exposure: "electrical construction (T&D + commercial/industrial) — core business", listing: US}
+    diversified:
+      - {ticker: HUBB, name: "Hubbell", exposure: "grid/utility segment roughly half of revenue [FOR HUMAN REVIEW]"}
+      - {ticker: ETN, name: "Eaton", exposure: "Electrical Americas majority segment; datacenter a growing slice [FOR HUMAN REVIEW]"}
+      - {ticker: CMI, name: "Cummins", exposure: "backup gensets a minority of revenue [FOR HUMAN REVIEW]"}
+    capacity_watch: "GEV stretch to 24 GW/yr by mid-2028; announced US transformer capacity additions 2027-2028; FERC/PJM queue reforms"
+
+  dc_cooling:
+    theme: ai_dc_cooling
+    constraint: >
+      Direct-to-chip liquid cooling demand from GB300/Vera-Rubin-class racks
+      is outrunning shipment capacity: the category leader's backlog more
+      than doubled in a year with book-to-bill near 3x, and the fast follower
+      is trading margin for capacity expansion. Crowding is concentrated in
+      VRT; the question is whether second-source suppliers reprice.
+    confidence: high
+    evidence:
+      - claim: "Vertiv ended 2025 with ~$15.0B backlog, +109% YoY; Q4 book-to-bill ~2.9x"
+        source: "https://www.techi.com/vertiv-vrt-ai-cooling-backlog-valuation/"
+        date: "2026"
+      - claim: "Modine fiscal-2026 datacenter revenue $1.1B, +73% YoY; gross margin -320bps on capacity expansion costs"
+        source: "https://www.tradingview.com/news/zacks:6b329607f094b:0-ai-data-center-cooling-mod-s-pivot-vs-vrt-s-moat-the-better-bet/"
+        date: "2026"
+    crowded_names: [VRT]
+    pure_plays:
+      - {ticker: MOD, name: "Modine", exposure: "datacenter cooling ~1/3 of revenue and growing fastest [FOR HUMAN REVIEW]", listing: US}
+    diversified:
+      - {ticker: NVT, name: "nVent Electric", exposure: "liquid cooling + electrical enclosures share [FOR HUMAN REVIEW]"}
+      - {ticker: BMI, name: "Badger Meter", exposure: "flow instrumentation for cooling loops — small share", needs_evidence: true}
+    capacity_watch: "VRT/MOD capacity adds; NVDA reference designs shifting cooling architecture per GPU generation"
+
+  optics_interconnect:
+    theme: optics_networking
+    constraint: >
+      1.6T-generation optical interconnect is gated by InP laser (EML)
+      capacity: one supplier ships 200G/lane EMLs at volume, NVIDIA has
+      locked up multi-year laser supply, and the #2's datacenter book-to-bill
+      exceeds 4x with capacity sold out through 2027. The crowd found POET;
+      the EML/InP capacity owners and their equipment chain are the
+      constraint nodes.
+    confidence: high
+    evidence:
+      - claim: "NVIDIA ~$4B multi-year EML/laser capacity lockup at Lumentum; rival lead times pushed past 2027"
+        source: "https://www.techtimes.com/articles/317281/20260527/ai-data-center-optical-component-shortage-nvidias-4b-laser-lockup-pushes-rivals-past-2027.htm"
+        date: "2026-05-27"
+      - claim: "Coherent order backlog reaches 2030; 6-inch InP conversion; datacenter book-to-bill >4x; InP sold out through 2027"
+        source: "https://www.digitimes.com/news/a20260508PD217/coherent-capacity-6-inch-optics-demand.html"
+        date: "2026-05-08"
+      - claim: "1.6T transceivers entered volume shipment 2026, setting up a three-year growth cycle"
+        source: "https://www.digitimes.com/news/a20260421PD207/shipments-growth-data-2026-capacity.html"
+        date: "2026-04-21"
+    crowded_names: [POET, LITE]
+    pure_plays:
+      - {ticker: COHR, name: "Coherent", exposure: "datacenter optics/lasers now the growth core; diversified industrial base [FOR HUMAN REVIEW]", listing: US}
+      - {ticker: AAOI, name: "Applied Optoelectronics", exposure: "transceivers ~all revenue; execution-risk history", listing: US}
+    diversified:
+      - {ticker: CRDO, name: "Credo", exposure: "AEC/retimers adjacent to optics — different node, same wall"}
+      - {ticker: GLW, name: "Corning", exposure: "fiber/enterprise a minority of revenue [FOR HUMAN REVIEW]"}
+    capacity_watch: "Lumentum/Coherent InP expansions (6-inch), Chinese module makers' EML sourcing, LPO/CPO architecture shifts reducing EML content"
+
+  robotics_actuation:
+    theme: robotics_automation
+    constraint: >
+      Humanoid/robot actuation is gated by precision reducers (harmonic /
+      cycloidal) concentrated in two Japanese makers, plus China-controlled
+      heavy-rare-earth magnets under an export-licensing regime. TrendForce
+      sees 2026 humanoid shipments >50k (+700% YoY) against reducer capacity
+      that is precision-bound and slow to scale. Most pure plays are
+      Japan-listed with thin ADRs — access friction is part of why they stay
+      quiet.
+    confidence: high
+    evidence:
+      - claim: "Precision reducers concentrated in Harmonic Drive Systems + Nabtesco (~60% share in robot joint reducers); Nabtesco doubling RV capacity by 2026"
+        source: "https://www.trendforce.com/presscenter/news/20251209-12825.html"
+        date: "2025-12-09"
+      - claim: "Roland Berger 2026 humanoid study: harmonic/strain-wave drives 'the clearest bottleneck in the actuator stack'; capacity structurally hard to scale"
+        source: "https://content.rolandberger.com/hubfs/07_presse/Roland_Berger_Humanoid_Robots_2026.pdf"
+        date: "2026"
+      - claim: "China rare-earth regime: Announcement 18 (in force since 2025-04) licenses 7 heavy REs + Dy/Tb magnets; Announcements 61/62 suspended only until 2026-11-10"
+        source: "https://www.clarkhill.com/news-events/news/china-hits-pause-on-rare-earth-export-controls-and-what-it-means-for-supply-chains/"
+        date: "2026"
+      - claim: "Magnet export licence reviews running 60-120+ days, creating broad supply bottlenecks"
+        source: "https://www.arnoldmagnetics.com/blog/chinas-rare-earth-export-delays-2025-2026-magnet-supply-chain-outlook/"
+        date: "2026"
+    crowded_names: [TSLA]
+    pure_plays:
+      - {ticker: HSNGY, name: "Harmonic Drive Systems", exposure: "harmonic drives — core business", listing: "US ADR (thin) / 6324.T — ACCESS/LIQUIDITY FLAG"}
+      - {ticker: NCTKY, name: "Nabtesco", exposure: "RV reducers ~dominant in heavy joints; diversified industrial rest", listing: "US ADR (thin) / 6268.T — ACCESS/LIQUIDITY FLAG"}
+      - {ticker: MP, name: "MP Materials", exposure: "US rare-earth mine + magnet build-out — core business", listing: US}
+    diversified:
+      - {ticker: NOVT, name: "Novanta", exposure: "precision motion/encoders/photonics for robotics & medical [FOR HUMAN REVIEW]"}
+      - {ticker: TER, name: "Teradyne", exposure: "Universal Robots / MiR cobots a minority of revenue"}
+    capacity_watch: "Nabtesco capacity doubling timeline; Chinese reducer entrants (Leaderdrive) qualifying at scale; Announcement 61/62 suspension expiry 2026-11-10"
+
+  space_rf:
+    theme: space
+    constraint: >
+      Satcom/phased-array build-outs face GaN-on-SiC RF front-end capacity
+      limits: US foundries at 80-90% utilization, custom MMIC lead times
+      30-40 weeks, new DPA-funded capacity not online until 2028-2029.
+      Evidence quality is MEDIUM (market-research heavy, few primary
+      statements) — gate accordingly.
+    confidence: medium
+    evidence:
+      - claim: "US GaN foundries (Wolfspeed Durham, Qorvo Richardson) at high utilization; custom GaN MMIC lead times 30-40 weeks early 2026; DPA-funded capacity lands 2028-2029"
+        source: "https://www.indexbox.io/store/united-states-satellite-phased-array-antenna-market-analysis-forecast-size-trends-and-insights/"
+        date: "2026"
+      - claim: "GaN amplifiers and precision phase shifters face periodic shortages from concentrated manufacturing"
+        source: "https://www.intelmarketresearch.com/multibeam-phased-array-market-3653"
+        date: "2026"
+    crowded_names: [ASTS, RKLB]
+    pure_plays:
+      - {ticker: MTSI, name: "MACOM", exposure: "RF/microwave semis incl. space & defense share [FOR HUMAN REVIEW]", listing: US}
+    diversified:
+      - {ticker: QRVO, name: "Qorvo", exposure: "defense/infrastructure GaN a minority vs handsets [FOR HUMAN REVIEW]"}
+      - {ticker: WOLF, name: "Wolfspeed", exposure: "GaN-on-SiC foundry — balance-sheet distress; check survivability gate first", needs_evidence: false}
+    capacity_watch: "DPA Title III GaN expansions (2028-29), ASTS/Starlink constellation cadence, defense demand crowding out commercial slots"
