@@ -1,0 +1,47 @@
+# {{ ticker }} — {{ name }} · constraint thesis memo ({{ memo_date }})
+
+> Auto-drafted by the Reddit-growth engine for human review. Paper research
+> only, not advice. Reddit is the scout here, never the signal.
+
+## 1. The theme and where Reddit is
+Theme: **{{ theme }}** (node: {{ node }}). Surfaced by the WSB cohort/mention
+funnel; crowded first-order expressions: **{{ crowded_names }}** (crowding z
+of this candidate: {{ "%.2f"|format(crowding_z) }} on {{ crowding_n_inputs }}
+input(s), velocity mode: {{ velocity_mode }}).
+
+## 2. The constraint (dated, cited evidence)
+{{ constraint_text }}
+
+Evidence:
+{% for e in evidence %}- ({{ e.date }}) {{ e.claim }} — {{ e.source }}
+{% endfor %}
+
+## 3. Why this node
+{{ exposure }} **[FOR HUMAN REVIEW]** — verify revenue exposure against the
+latest 10-K segment data; identify competing suppliers and capacity adds.
+Listing: {{ listing }}. {{ access_flag }}
+
+## 4. What the crowd misses
+The first-order names ({{ crowded_names }}) are already momentum-priced by
+retail attention; this node sits upstream at the physical bottleneck with a
+lower crowding score. The creative claim **[FOR HUMAN REVIEW]**: value
+accrues to the constraint owner while the constraint binds.
+
+## 5. Validation gate results
+- Evidence gate (≥2 dated sources on the node): **{{ "PASS" if gate_evidence else "FAIL" }}**
+- Survivability: runway {{ "%.0f"|format(runway_quarters) }} quarters — **{{ "PASS" if gate_runway else "FAIL" }}**; going-concern scan: **{{ "clean" if gate_going_concern else "HIT — read the opinion" }}**
+- Quality of growth: revenue growth {{ "%.1f%%"|format(100 * rev_growth) }} + FCF margin {{ "%.1f%%"|format(100 * fcf_margin) }} = rule-of-40 {{ "%.0f"|format(100 * rule_of_40) }} — **{{ "PASS" if gate_rule40 else "FAIL" }}**; gross-margin trend **{{ "PASS" if gate_gm_trend else "FAIL" }}**; leverage **{{ "PASS" if gate_leverage else "FAIL" }}**
+- Dilution: share CAGR {{ "%+.1f%%"|format(100 * share_cagr) }}/yr, SBC {{ "%.1f%%"|format(100 * sbc_rev) }} of revenue — **{{ "PASS" if gate_dilution else "FAIL" }}**
+
+## 6. Structure & sizing
+Sleeve: **{{ sleeve }}** — direct equity in the quiet constraint owner.
+Max position: ${{ "%.0f"|format(max_position_dollars) }} (5% of the $10k research
+book). Barbell expression: {{ barbell_note }}
+
+## 7. Pre-mortem & exit conditions (pre-registered)
+These falsify the constraint thesis and ARE the exit triggers:
+{% for x in exit_triggers %}- {{ x }}
+{% endfor %}
+
+## 8. Earnings note
+{{ earnings_note }}

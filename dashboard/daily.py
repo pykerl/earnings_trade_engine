@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from common import config
-from dashboard import charts, value_tab
+from dashboard import charts, reddit_tab, value_tab
 
 log = logging.getLogger("ete.dashboard")
 
@@ -467,7 +467,7 @@ if (location.hash) {
   function close() { overlay.hidden = true; body.textContent = ''; }
   document.querySelectorAll('.memobtn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var tpl = document.getElementById('memo-' + btn.dataset.memo);
+      var tpl = document.getElementById(btn.dataset.memo);
       if (!tpl) return;
       body.textContent = '';
       body.appendChild(tpl.content.cloneNode(true));
@@ -616,6 +616,11 @@ def render_html(
     events: pd.DataFrame | None = None,
     insiders: pd.DataFrame | None = None,
     gurus: pd.DataFrame | None = None,
+    ideas: pd.DataFrame | None = None,
+    growth_gates: pd.DataFrame | None = None,
+    theme_summary: pd.DataFrame | None = None,
+    growth_memos: dict[str, str] | None = None,
+    autopsy_summary: str = "",
 ) -> str:
     live = scored[~scored["screened"]]
     killed = scored[scored["screened"]]
@@ -638,6 +643,11 @@ def render_html(
         int((valuations["verdict"] == "buy candidate").sum())
         if valuations is not None and len(valuations) else 0
     )
+    n_ideas = len(ideas) if ideas is not None else 0
+    reddit_html = reddit_tab.render_reddit_tab(
+        ideas, growth_gates, theme_summary,
+        memos_by_ticker=growth_memos, autopsy_summary=autopsy_summary,
+    )
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     return f"""<!doctype html>
 <html lang=en><head><meta charset=utf-8>
@@ -654,6 +664,7 @@ def render_html(
   <button role=tab aria-selected=false data-tab=positioning>Positioning</button>
   <button role=tab aria-selected=false data-tab=value>Value screen{f' ({n_buy})' if n_buy else ''}</button>
   <button role=tab aria-selected=false data-tab=valuesoon>Reporting soon</button>
+  <button role=tab aria-selected=false data-tab=reddit>Reddit Suggestions{f' ({n_ideas})' if n_ideas else ''}</button>
 </div>
 <section class=tabpane id=plan>
 <div class=tiles>{tiles}</div>
@@ -676,6 +687,12 @@ def render_html(
 <section class=tabpane id=valuesoon hidden>
 {value_tab.render_reporting_soon(valuations, events, today=run_date, thesis_fn=_thesis_fn())}
 </section>
+<section class=tabpane id=reddit hidden>
+{reddit_html}
+</section>
+<div class="memo-overlay" hidden><div class="memo-dialog" role="dialog" aria-modal="true">
+<button class="memo-close" aria-label="Close">✕ close</button>
+<div class="memo-body"></div></div></div>
 <script>{charts.CHART_JS}</script>
 <script>{TABS_JS}</script>
 </body></html>
@@ -715,6 +732,32 @@ def run(
     events = _opt(config.EVENTS_PARQUET)
     v_insiders = _opt(config.INSIDERS_PARQUET)
     v_gurus = _opt(config.GURUS_PARQUET)
+    ideas = _opt(config.DATA_DIR / "growth_ideas.parquet")
+    growth_gates = _opt(config.DATA_DIR / "growth_gates.parquet")
+    mentions = _opt(config.DATA_DIR / "mentions_latest.parquet")
+    theme_summary = None
+    if mentions is not None and len(mentions):
+        from themes.cluster import theme_mention_summary
+
+        theme_summary = theme_mention_summary(mentions)
+    growth_memos = {}
+    if ideas is not None and len(ideas):
+        raw = value_tab.load_latest_memos([f"{t}_growth" for t in ideas["ticker"]])
+        growth_memos = {k.replace("_growth", ""): v for k, v in raw.items()}
+    autopsy_summary = ""
+    autopsy_path = config.REPO_ROOT / "reports" / "cohort_autopsy.md"
+    if autopsy_path.exists():
+        import re as _re
+
+        m = _re.search(
+            r"wsb_2026_index.*?Total return since publication: ([\d.\-]+%).*?SPY: ([\d.\-]+%)",
+            autopsy_path.read_text(), _re.S,
+        )
+        if m:
+            autopsy_summary = (
+                f"2026 index +{m.group(1).lstrip('+')} vs SPY {m.group(2)} — but beta ~2, "
+                "two names carried everything; scout, not signal."
+            )
 
     html_path = out_dir / f"daily_{run_date}.html"
     csv_path = out_dir / f"daily_{run_date}.csv"
@@ -722,8 +765,12 @@ def run(
         render_html(
             scored, run_date, banner=banner, plan=plan, moves=moves, squeeze=squeeze,
             valuations=valuations, events=events, insiders=v_insiders, gurus=v_gurus,
+            ideas=ideas, growth_gates=growth_gates, theme_summary=theme_summary,
+            growth_memos=growth_memos, autopsy_summary=autopsy_summary,
         )
     )
+    if ideas is not None and len(ideas):
+        ideas.to_csv(out_dir / f"reddit_ideas_{run_date}.csv", index=False)
     if valuations is not None and len(valuations):
         valuations.to_csv(out_dir / f"value_screen_{run_date}.csv", index=False)
     cols = [c for c in CSV_COLUMNS if c in scored.columns]

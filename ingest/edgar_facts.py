@@ -271,6 +271,34 @@ def build_fundamentals(universe: pd.DataFrame, zip_path=None):
     return annual, quarterly, drops_df
 
 
+COMPANYFACTS_API = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
+
+
+def fetch_company_via_api(ticker: str, cik: int, session=None):
+    """Single-company companyfacts via the live API (for tickers outside the
+    bulk-parsed universe, e.g. small-cap constraint candidates). Same parser,
+    same drop-not-guess rules. Returns (annual_df, quarterly_df) or None."""
+    import json as _json
+
+    session = session or make_edgar_session()
+    cache = config.EDGAR_DIR / "api_facts" / f"CIK{cik:010d}.json"
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    if cache.exists():
+        payload = _json.loads(cache.read_text())
+    else:
+        resp = edgar_get(session, COMPANYFACTS_API.format(cik=cik), retries=2)
+        if resp is None:
+            return None
+        cache.write_text(resp.text)
+        payload = resp.json()
+    adf, qdf, _tags, missing = parse_company(payload, ticker)
+    if missing:
+        log.info("%s: unresolvable core concepts via API: %s", ticker, ",".join(missing))
+        return None
+    adf["cik"] = cik
+    return adf, qdf
+
+
 def run(universe: pd.DataFrame | None = None) -> pd.DataFrame:
     config.ensure_dirs()
     if universe is None:

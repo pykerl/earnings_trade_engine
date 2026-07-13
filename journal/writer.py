@@ -59,17 +59,49 @@ def expectations_row(vrow: pd.Series, thesis: str, memo_date: date) -> dict:
     }
 
 
-def register(rows: list[dict], path: Path | None = None) -> int:
+GROWTH_FIELDS = [
+    "registered_at", "memo_date", "ticker", "node", "theme", "sleeve",
+    "idea_score", "crowding_z", "crowding_n_inputs", "gates_passed",
+    "gate_notes", "n_evidence", "barbell_against", "max_position_dollars",
+    "evidence_expectations", "exit_triggers",
+]
+
+
+def register(rows: list[dict], path: Path | None = None, fields: list[str] | None = None) -> int:
     path = path or config.JOURNAL_CSV
+    fields = fields or FIELDS
     path.parent.mkdir(parents=True, exist_ok=True)
     seen = existing_keys(path)
     new = [r for r in rows if (str(r["ticker"]), str(r["memo_date"])) not in seen]
     if new:
         header = not path.exists()
         with path.open("a", newline="") as fh:
-            w = csv.DictWriter(fh, fieldnames=FIELDS)
+            w = csv.DictWriter(fh, fieldnames=fields)
             if header:
                 w.writeheader()
             w.writerows(new)
     log.info("journal: %d new expectation rows -> %s", len(new), path)
     return len(new)
+
+
+def growth_expectations_row(idea: pd.Series, exit_triggers: list[str], memo_date: date) -> dict:
+    return {
+        "registered_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "memo_date": memo_date.isoformat(),
+        "ticker": idea["ticker"],
+        "node": idea["node"],
+        "theme": idea["theme"],
+        "sleeve": idea["sleeve"],
+        "idea_score": round(float(idea["idea_score"]), 4),
+        "crowding_z": round(float(idea["crowding_z"]), 3),
+        "crowding_n_inputs": int(idea["crowding_n_inputs"]),
+        "gates_passed": bool(idea["gates_passed"]),
+        "gate_notes": idea["gate_notes"],
+        "n_evidence": int(idea["n_evidence"]),
+        "barbell_against": idea.get("barbell_against", ""),
+        "max_position_dollars": float(idea["max_position_dollars"]),
+        "evidence_expectations": (
+            "backlog/lead-time/pricing evidence strengthens at next two prints"
+        ),
+        "exit_triggers": " | ".join(exit_triggers),
+    }

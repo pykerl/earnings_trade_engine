@@ -85,9 +85,9 @@ def test_md_to_html_renders_and_escapes():
 
 def test_value_screen_embeds_memo_modal():
     out = value_tab.render_value_screen(_vals(), memos_by_ticker={"TST": MEMO_MD})
-    assert 'data-memo="TST"' in out and "📝" in out
+    assert 'data-memo="memo-TST"' in out and "📝" in out
     assert '<template id="memo-TST">' in out
-    assert "memo-overlay" in out and "memo-close" in out
+    assert '<template id="memo-TST">' in out  # overlay now lives at page level
     # watch name without a memo stays a plain cell
     assert 'data-memo="WCH"' not in out
 

@@ -219,6 +219,54 @@ def new_filing_alerts(vals, universe, days: int = 7) -> list[str]:
     return alerts
 
 
+def cmd_ideas(args) -> int:
+    """Reddit-growth engine (plan_reddit_growth step 11): refresh mentions,
+    rescore crowding, re-run gates, regenerate ideas dashboard + top-8 memos."""
+    import pandas as pd
+
+    from dashboard import daily as dashboard_daily
+    from gates import growth_gates
+    from ingest import mentions as mentions_mod
+    from journal import writer as journal_writer
+    from memos import growth_memos
+    from positions import construct
+
+    today = date.fromisoformat(args.today) if args.today else date.today()
+    config.ensure_dirs()
+
+    mentions_mod.run(today=today)
+    gates = growth_gates.run(today=today)
+    ideas = construct.run()
+
+    events = (
+        pd.read_parquet(config.EVENTS_PARQUET) if config.EVENTS_PARQUET.exists() else None
+    )
+    memo_paths = growth_memos.generate(ideas, events, top_n=8, memo_date=today)
+    rows = [
+        journal_writer.growth_expectations_row(
+            idea, growth_memos.exit_triggers(
+                growth_gates.load_constraint_map()[idea["node"]], idea
+            ), today,
+        )
+        for _, idea in ideas.head(8).iterrows()
+    ]
+    n_journal = journal_writer.register(
+        rows, path=config.REPO_ROOT / "journal" / "growth_expectations.csv",
+        fields=journal_writer.GROWTH_FIELDS,
+    )
+    html_path, _ = dashboard_daily.run(run_date=today)
+    print(
+        f"\nideas run complete:\n"
+        f"  candidates gated : {len(gates)} ({int(gates['gates_passed'].sum())} pass)\n"
+        f"  quiet-equity ideas: {len(ideas)}\n"
+        f"  options sleeve    : exported -> data/options_sleeve.csv\n"
+        f"  memos             : {len(memo_paths)} -> memos/\n"
+        f"  journal rows      : {n_journal} new\n"
+        f"  dashboard         : {html_path}"
+    )
+    return 0
+
+
 def cmd_av_backfill(_args) -> int:
     from ingest.earnings_history import run_av_backfill
 
@@ -255,6 +303,10 @@ def main(argv=None) -> int:
                           help="re-pull universe + companyfacts + prices")
     p_weekly.add_argument("--today", help="override run date (YYYY-MM-DD)")
     p_weekly.set_defaults(func=cmd_weekly)
+
+    p_ideas = sub.add_parser("ideas", help="reddit-growth engine: mentions, gates, ideas, memos")
+    p_ideas.add_argument("--today", help="override run date (YYYY-MM-DD)")
+    p_ideas.set_defaults(func=cmd_ideas)
 
     p_av = sub.add_parser("av-backfill", help="spend today's Alpha Vantage ration on the queue")
     p_av.set_defaults(func=cmd_av_backfill)

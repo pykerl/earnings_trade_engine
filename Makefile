@@ -5,6 +5,11 @@
 weekly:
 	uv run python run.py weekly
 
+# Reddit-growth engine (plan_reddit_growth step 11): refresh mentions, rescore
+# crowding, re-run gates, regenerate ranked ideas + top-8 memos.
+ideas:
+	uv run python run.py ideas
+
 setup:
 	uv sync
 

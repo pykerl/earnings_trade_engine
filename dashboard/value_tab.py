@@ -130,7 +130,7 @@ def render_value_screen(vals: pd.DataFrame | None, insiders: pd.DataFrame | None
         tk_cell = f"<strong>{html.escape(str(r.ticker))}</strong>"
         if r.ticker in memos_by_ticker:
             tk_cell = (
-                f'<button class="memobtn" data-memo="{html.escape(str(r.ticker))}" '
+                f'<button class="memobtn" data-memo="memo-{html.escape(str(r.ticker))}" '
                 f'title="Open the thesis memo">{html.escape(str(r.ticker))} 📝</button>'
             )
             templates.append(
@@ -171,9 +171,6 @@ def render_value_screen(vals: pd.DataFrame | None, insiders: pd.DataFrame | None
         "human review pending). All memos are git-versioned in <code>memos/</code>; "
         "full list incl. ejections in the CSV.</p>"
         f"{''.join(templates)}"
-        '<div class="memo-overlay" hidden><div class="memo-dialog" role="dialog" aria-modal="true">'
-        '<button class="memo-close" aria-label="Close">✕ close</button>'
-        '<div class="memo-body"></div></div></div>'
     )
 
 
