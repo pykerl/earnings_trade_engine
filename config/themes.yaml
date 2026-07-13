@@ -1,0 +1,42 @@
+# Curated ticker -> theme map (plan_reddit_growth §3.B1). 50 tickers don't
+# need NLP. Covers both WSB cohorts + recurring top-mention names. Themes in
+# the constraint_map get supply-chain research; the rest exist so cohort
+# tickers classify cleanly.
+
+themes:
+  ai_compute:
+    label: "AI compute (GPUs/accelerators/foundry)"
+    tickers: [NVDA, AMD, TSM, AVGO, INTC, ARM, MRVL]
+  memory:
+    label: "Memory / HBM"
+    tickers: [MU, WDC, STX]
+  ai_dc_infra:
+    label: "AI datacenter build-out (neoclouds, servers, REITs)"
+    tickers: [NBIS, IREN, SMCI, DELL, CRWV, EQIX, DLR, ORCL, MSFT, GOOGL, GOOG, AMZN, META]
+  ai_dc_power:
+    label: "AI datacenter power (turbines, transformers, switchgear, electrical)"
+    tickers: [GEV, ETN, PWR, VST, CEG, HUBB, NRG, MYRG, CMI]
+  ai_dc_cooling:
+    label: "AI datacenter cooling (liquid / direct-to-chip)"
+    tickers: [VRT, MOD, NVT, BMI]
+  optics_networking:
+    label: "Optics / networking / interconnect"
+    tickers: [POET, COHR, LITE, CRDO, AAOI, ANET, CIEN, GLW]
+  space:
+    label: "Space (launch, satcom, components)"
+    tickers: [RKLB, ASTS, LUNR, RDW, PL, SPCX]
+  robotics_automation:
+    label: "Robotics / automation (incl. actuation chain)"
+    tickers: [TSLA, PATH, ISRG, SYM, ROK, TER, ATS, FANUY, HSNGY, YASKY]
+  fintech:
+    label: "Fintech / brokers"
+    tickers: [HOOD, SOFI, COIN, PYPL]
+  ai_software:
+    label: "AI software / data"
+    tickers: [PLTR, RDDT, SNOW, AI]
+  crypto_treasury:
+    label: "Crypto treasuries / miners-turned-DC"
+    tickers: [MSTR, MARA, RIOT, CLSK]
+  consumer_retail:
+    label: "Consumer / retail"
+    tickers: [WMT, COST, GME]
