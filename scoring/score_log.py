@@ -76,17 +76,42 @@ def score(predictions: pd.DataFrame, prices: pd.DataFrame, today: date) -> pd.Da
         fair = float(r.fair_move)
         expiry = str(r.expiry)
         settle = by_day.get(expiry)
-        pnl = structure_pnl(pd.Series(r._asdict()), settle) if (
-            settle is not None and expiry <= today.isoformat()
-        ) else None
+        expired = settle is not None and expiry <= today.isoformat()
+        pnl = structure_pnl(pd.Series(r._asdict()), settle) if expired else None
+
+        # hypothetical one-lot straddle outcomes at the FROZEN quotes — the
+        # systematic what-worked measure across every event, traded or not
+        short_straddle = long_straddle = np.nan
+        if expired and np.isfinite(r.atm_strike) and np.isfinite(r.straddle_bid):
+            intrinsic = 100.0 * abs(settle - float(r.atm_strike))
+            short_straddle = 100.0 * float(r.straddle_bid) - intrinsic   # sell at bid
+            long_straddle = intrinsic - 100.0 * float(r.straddle_ask)    # buy at ask
+        edge = (implied - fair) / fair if fair > 0 else np.nan
+        if not np.isfinite(edge):
+            bucket = "unscored"
+        elif edge >= config.EDGE_NO_TRADE_BAND:
+            bucket = "rich (model: short vol)"
+        elif edge <= -config.EDGE_NO_TRADE_BAND:
+            bucket = "cheap (model: long vol)"
+        else:
+            bucket = "neutral (model: no trade)"
+        aligned = (
+            short_straddle if bucket.startswith("rich")
+            else long_straddle if bucket.startswith("cheap")
+            else 0.0 if bucket.startswith("neutral") and np.isfinite(short_straddle)
+            else np.nan
+        )
         rows.append(
             {
                 "ticker": r.ticker,
                 "earnings_date": ev_date,
+                "week": ev_date.isocalendar().week,
                 "session": r.session,
                 "structure": r.structure,
                 "implied_frozen": implied,
                 "fair_frozen": fair,
+                "edge_frozen": edge,
+                "edge_bucket": bucket,
                 "realized_move": realized,
                 "abs_realized": abs(realized),
                 "inside_implied": abs(realized) <= implied,
@@ -95,6 +120,9 @@ def score(predictions: pd.DataFrame, prices: pd.DataFrame, today: date) -> pd.Da
                 "entry_price": r.entry_price,
                 "settle": settle,
                 "pnl": pnl,
+                "short_straddle_pnl": short_straddle,
+                "long_straddle_pnl": long_straddle,
+                "model_aligned_pnl": aligned,
                 "screened": bool(r.screened),
             }
         )
@@ -135,10 +163,45 @@ def render_scorecard(scored: pd.DataFrame, today: date) -> str:
                 f"±{100 * r.implied_frozen:.1f}% | {100 * r.realized_move:+.1f}% | "
                 f"${r.pnl:,.0f} |"
             )
+    # ---- signal validity: does the edge bucket predict straddle P&L? -------
+    hyp = scored[scored["short_straddle_pnl"].notna()]
+    L += ["", "## Signal validity — hypothetical 1-lot straddles at frozen quotes", ""]
+    if hyp.empty:
+        L.append("- no expired events with usable frozen quotes yet")
+    else:
+        L += [
+            "Sell-at-bid / buy-at-ask for EVERY resolved event, grouped by what the",
+            "model said at registration. If the edge signal is real, rich events should",
+            "make money shorted and cheap events should make money bought.",
+            "",
+            "| Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |",
+            "|---|---|---|---|---|",
+        ]
+        for bucket, g in hyp.groupby("edge_bucket"):
+            L.append(
+                f"| {bucket} | {len(g)} | ${g['short_straddle_pnl'].sum():,.0f} | "
+                f"${g['long_straddle_pnl'].sum():,.0f} | ${g['model_aligned_pnl'].sum():,.0f} |"
+            )
+        total_aligned = hyp["model_aligned_pnl"].sum()
+        always_short = hyp["short_straddle_pnl"].sum()
+        L += [
+            "",
+            f"- **Model-aligned total: ${total_aligned:,.0f}** vs always-short-everything "
+            f"${always_short:,.0f} (n={len(hyp)})",
+            "- Screened events are included: the screen protects fills, not signal scoring.",
+        ]
+        by_week = hyp.groupby("week")[["short_straddle_pnl", "model_aligned_pnl"]].sum()
+        if len(by_week) > 1:
+            L += ["", "| ISO week | short-all P&L | model-aligned P&L |", "|---|---|---|"]
+            for wk, r in by_week.iterrows():
+                L.append(
+                    f"| {wk} | ${r['short_straddle_pnl']:,.0f} | ${r['model_aligned_pnl']:,.0f} |"
+                )
     L += [
         "",
-        "_One week is directional evidence, not a verdict (plan §4). The season-end_",
-        "_review scores calibration bands, edge-vs-P&L regression, and cost drag._",
+        "_Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_",
+        "_delayed quotes flatter both sides. Season-end review adds calibration bands,_",
+        "_edge-vs-P&L regression, and the cost-drag reality check._",
     ]
     return "\n".join(L)
 

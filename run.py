@@ -94,6 +94,17 @@ def cmd_daily(args) -> int:
     pred_path = (config.DATA_DIR / "demo" / "predictions_demo.csv") if args.fixtures else None
     new_rows = predictions.register(scored, today=today, path=pred_path)
 
+    if not args.fixtures and config.PREDICTIONS_CSV.exists():
+        from scoring import score_log
+
+        try:
+            score_log.run(today=today)
+            html_path, csv_path = dashboard_daily.run(
+                scored=scored, run_date=today, banner=banner, plan=plan, squeeze=squeeze
+            )  # rebuild so the Scorecard tab carries today's resolutions
+        except Exception as exc:
+            log.warning("scorecard refresh failed (non-fatal): %s", exc)
+
     sq_candidates = squeeze[squeeze["candidate"]] if len(squeeze) else squeeze
     sq_path = (
         (config.DATA_DIR / "demo" / "squeeze_predictions_demo.csv")

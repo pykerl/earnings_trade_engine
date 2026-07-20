@@ -49,6 +49,7 @@ def test_score_alignment_and_calibration():
         "structure": "iron fly", "detail": "short 100 straddle @ bid, long 95P / 105C @ ask",
         "entry_price": 400.0, "expiry": "2026-07-17",
         "implied_move_mid": 0.035, "fair_move": 0.026, "screened": False,
+        "atm_strike": 100.0, "straddle_bid": 3.4, "straddle_ask": 3.6, "spot": 100.0,
     }])
     scored = score_log.score(preds, prices, today=date(2026, 7, 20))
     assert len(scored) == 1
@@ -58,6 +59,12 @@ def test_score_alignment_and_calibration():
     assert r["inside_implied"]  # 3% < 3.5%
     # settle 102: intrinsic 2 -> pnl = 400 - 200
     assert r["pnl"] == pytest.approx(200.0)
+    # hypothetical straddles at frozen quotes, settle 102 (intrinsic $200):
+    assert r["short_straddle_pnl"] == pytest.approx(340.0 - 200.0)
+    assert r["long_straddle_pnl"] == pytest.approx(200.0 - 360.0)
+    # edge (3.5 vs 2.6 fair) = +34.6% -> rich bucket, aligned = short side
+    assert r["edge_bucket"].startswith("rich")
+    assert r["model_aligned_pnl"] == pytest.approx(140.0)
 
 
 def test_unresolved_events_are_skipped():
@@ -65,7 +72,8 @@ def test_unresolved_events_are_skipped():
         "ticker": "JPM", "earnings_date": "2026-07-28", "session": "BMO",
         "structure": "no trade", "detail": "", "entry_price": np.nan,
         "expiry": "2026-07-31", "implied_move_mid": 0.03, "fair_move": 0.03,
-        "screened": False,
+        "screened": False, "atm_strike": np.nan, "straddle_bid": np.nan,
+        "straddle_ask": np.nan, "spot": np.nan,
     }])
     prices = pd.DataFrame({"ticker": ["JPM"], "date": [pd.Timestamp("2026-07-13")],
                            "adj_close": [100.0]})

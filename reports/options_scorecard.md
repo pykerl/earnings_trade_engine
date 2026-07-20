@@ -14,5 +14,20 @@
 | BAC | 2026-07-14 BMO | iron fly | ±3.7% | +1.9% | $66 |
 | C | 2026-07-14 BMO | iron fly | ±4.5% | -5.3% | $-211 |
 
-_One week is directional evidence, not a verdict (plan §4). The season-end_
-_review scores calibration bands, edge-vs-P&L regression, and cost drag._
+## Signal validity — hypothetical 1-lot straddles at frozen quotes
+
+Sell-at-bid / buy-at-ask for EVERY resolved event, grouped by what the
+model said at registration. If the edge signal is real, rich events should
+make money shorted and cheap events should make money bought.
+
+| Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
+|---|---|---|---|---|
+| neutral (model: no trade) | 6 | $810 | $-1,566 | $0 |
+| rich (model: short vol) | 16 | $1,795 | $-5,969 | $1,795 |
+
+- **Model-aligned total: $1,795** vs always-short-everything $2,605 (n=22)
+- Screened events are included: the screen protects fills, not signal scoring.
+
+_Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
+_delayed quotes flatter both sides. Season-end review adds calibration bands,_
+_edge-vs-P&L regression, and the cost-drag reality check._

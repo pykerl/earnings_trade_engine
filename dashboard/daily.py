@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from common import config
-from dashboard import charts, reddit_tab, value_tab
+from dashboard import charts, reddit_tab, scorecard_tab, value_tab
 
 log = logging.getLogger("ete.dashboard")
 
@@ -621,6 +621,7 @@ def render_html(
     theme_summary: pd.DataFrame | None = None,
     growth_memos: dict[str, str] | None = None,
     autopsy_summary: str = "",
+    scorecard: pd.DataFrame | None = None,
 ) -> str:
     live = scored[~scored["screened"]]
     killed = scored[scored["screened"]]
@@ -665,6 +666,7 @@ def render_html(
   <button role=tab aria-selected=false data-tab=value>Value screen{f' ({n_buy})' if n_buy else ''}</button>
   <button role=tab aria-selected=false data-tab=valuesoon>Reporting soon</button>
   <button role=tab aria-selected=false data-tab=reddit>Reddit Suggestions{f' ({n_ideas})' if n_ideas else ''}</button>
+  <button role=tab aria-selected=false data-tab=scorecard>Scorecard</button>
 </div>
 <section class=tabpane id=plan>
 <div class=tiles>{tiles}</div>
@@ -689,6 +691,9 @@ def render_html(
 </section>
 <section class=tabpane id=reddit hidden>
 {reddit_html}
+</section>
+<section class=tabpane id=scorecard hidden>
+{scorecard_tab.render_scorecard_tab(scorecard)}
 </section>
 <div class="memo-overlay" hidden><div class="memo-dialog" role="dialog" aria-modal="true">
 <button class="memo-close" aria-label="Close">✕ close</button>
@@ -759,6 +764,8 @@ def run(
                 "two names carried everything; scout, not signal."
             )
 
+    scorecard = _opt(config.DATA_DIR / "scorecard.parquet")
+
     html_path = out_dir / f"daily_{run_date}.html"
     csv_path = out_dir / f"daily_{run_date}.csv"
     html_path.write_text(
@@ -767,6 +774,7 @@ def run(
             valuations=valuations, events=events, insiders=v_insiders, gurus=v_gurus,
             ideas=ideas, growth_gates=growth_gates, theme_summary=theme_summary,
             growth_memos=growth_memos, autopsy_summary=autopsy_summary,
+            scorecard=scorecard,
         )
     )
     if ideas is not None and len(ideas):
