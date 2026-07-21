@@ -20,7 +20,7 @@ import numpy as np
 import pandas as pd
 
 from common import config
-from dashboard import charts, reddit_tab, scorecard_tab, value_tab
+from dashboard import charts, picks_tab, reddit_tab, scorecard_tab, value_tab
 
 log = logging.getLogger("ete.dashboard")
 
@@ -622,6 +622,7 @@ def render_html(
     growth_memos: dict[str, str] | None = None,
     autopsy_summary: str = "",
     scorecard: pd.DataFrame | None = None,
+    picks_html: str = "",
 ) -> str:
     live = scored[~scored["screened"]]
     killed = scored[scored["screened"]]
@@ -667,6 +668,7 @@ def render_html(
   <button role=tab aria-selected=false data-tab=valuesoon>Reporting soon</button>
   <button role=tab aria-selected=false data-tab=reddit>Reddit Suggestions{f' ({n_ideas})' if n_ideas else ''}</button>
   <button role=tab aria-selected=false data-tab=scorecard>Scorecard</button>
+  <button role=tab aria-selected=false data-tab=picks>John and Paul picks</button>
 </div>
 <section class=tabpane id=plan>
 <div class=tiles>{tiles}</div>
@@ -694,6 +696,9 @@ def render_html(
 </section>
 <section class=tabpane id=scorecard hidden>
 {scorecard_tab.render_scorecard_tab(scorecard)}
+</section>
+<section class=tabpane id=picks hidden>
+{picks_html}
 </section>
 <div class="memo-overlay" hidden><div class="memo-dialog" role="dialog" aria-modal="true">
 <button class="memo-close" aria-label="Close">✕ close</button>
@@ -766,6 +771,17 @@ def run(
 
     scorecard = _opt(config.DATA_DIR / "scorecard.parquet")
 
+    try:
+        picks_data = picks_tab.load_inputs()
+        picks_html = picks_tab.render_picks_tab(run_date, data=picks_data)
+        if picks_data.get("nav") is not None and len(picks_data["nav"]):
+            picks_tab.leaderboard_frame(picks_data["nav"]).to_csv(
+                out_dir / "picks_leaderboard.csv", index=False
+            )
+    except Exception as exc:  # the race must never take down the whole dashboard
+        log.warning("picks tab failed to render: %s", exc)
+        picks_html = f"<p class=muted>picks tab unavailable this run: {html.escape(str(exc))}</p>"
+
     html_path = out_dir / f"daily_{run_date}.html"
     csv_path = out_dir / f"daily_{run_date}.csv"
     html_path.write_text(
@@ -774,7 +790,7 @@ def run(
             valuations=valuations, events=events, insiders=v_insiders, gurus=v_gurus,
             ideas=ideas, growth_gates=growth_gates, theme_summary=theme_summary,
             growth_memos=growth_memos, autopsy_summary=autopsy_summary,
-            scorecard=scorecard,
+            scorecard=scorecard, picks_html=picks_html,
         )
     )
     if ideas is not None and len(ideas):
