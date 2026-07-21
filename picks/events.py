@@ -1,0 +1,189 @@
+"""Earnings-date resolver + T-1 freeze for the picks competition (plan §4.5).
+
+Dates are NEVER hardcoded: every one of the 11 names is resolved live via the
+calendar module's sources with the standard two-source cross-check
+(yfinance primary; Nasdaq + optional Finnhub secondary; conflicting dates are
+flagged, not silently kept). The picks season runs ~7 weeks, past the main
+engine's 21-day window, so sources are queried in chunks out to the season
+end date.
+
+T-1 freeze, per the standard journal discipline: on the last trading day
+before a name reports, one frozen row (implied move from live chains, fair
+move from the model when the name is covered) is appended to
+log/picks_predictions.csv via the shared first-write-wins journal writer.
+"""
+
+from __future__ import annotations
+
+import logging
+from datetime import date, timedelta
+
+import pandas as pd
+
+from common import config
+from ingest import calendar as cal
+from log import predictions
+
+log = logging.getLogger("ete.picks_events")
+
+PICKS_EVENTS_PARQUET = config.DATA_DIR / "picks_events.parquet"
+PICKS_PREDICTIONS_CSV = config.LOG_DIR / "picks_predictions.csv"
+
+FIELDS = [
+    "registered_at", "portfolio", "ticker", "earnings_date", "session",
+    "expiry", "spot", "atm_strike",
+    "straddle_bid", "straddle_mid", "straddle_ask",
+    "implied_move_bid", "implied_move_mid", "implied_move_ask",
+    "fair_move", "ci_low", "ci_high", "n_events",
+    "source_agreement", "sources",
+]
+
+
+def picks_universe(rules: dict) -> pd.DataFrame:
+    rows = [
+        {"ticker": t, "portfolio": pname}
+        for pname, p in rules["portfolios"].items()
+        for t in p["tickers"]
+    ]
+    return pd.DataFrame(rows)
+
+
+# ----------------------------------------------------------- date resolution --
+def _yf_events(tickers: list[str], today: date, horizon: date) -> pd.DataFrame:
+    rows = []
+    for t in tickers:
+        row = cal._yf_next_event(t, today, horizon)
+        if row:
+            rows.append(row)
+    return pd.DataFrame(rows, columns=["ticker", "earnings_date", "session"])
+
+
+def _nasdaq_events(today: date, horizon: date) -> pd.DataFrame:
+    """Nasdaq calendar in 22-day chunks out to the season horizon."""
+    frames, chunk = [], today
+    step = config.CALENDAR_DAYS_AHEAD + 1
+    while chunk <= horizon:
+        frames.append(cal.fetch_nasdaq_calendar(today=chunk))
+        chunk += timedelta(days=step)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(
+        columns=["ticker", "earnings_date", "session"]
+    )
+
+
+def resolve_dates(rules: dict, today: date | None = None) -> pd.DataFrame:
+    """One row per pick with a cross-checked date, or a flagged status.
+
+    status: confirmed | single_source | conflict | unresolved. Conflicted and
+    unresolved names keep a row (earnings_date=NaT for unresolved) so the tab
+    always shows all 11 names — nothing is silently dropped.
+    """
+    today = today or date.today()
+    horizon = date.fromisoformat(rules["rules"]["end_date"]) + timedelta(days=10)
+    uni = picks_universe(rules)
+    tickers = uni["ticker"].tolist()
+
+    yf_events = _yf_events(tickers, today, horizon)
+    cross = {
+        "nasdaq": _nasdaq_events(today, horizon),
+        "finnhub": cal.fetch_finnhub_calendar(today=today),
+    }
+    kept, dropped = cal.reconcile(yf_events, cross)
+
+    kept = kept.rename(columns={"source_agreement": "status"})
+    conflicts = pd.DataFrame(
+        [
+            {"ticker": r.ticker, "earnings_date": r.yf_date, "session": cal.UNKNOWN,
+             "status": "conflict", "sources": f"yfinance vs {r.conflicts}"}
+            for r in dropped.itertuples(index=False)
+        ],
+        columns=["ticker", "earnings_date", "session", "status", "sources"],
+    )
+    resolved = pd.concat([kept, conflicts], ignore_index=True)
+    events = uni.merge(resolved, on="ticker", how="left")
+    events["status"] = events["status"].fillna("unresolved")
+    events["session"] = events["session"].fillna(cal.UNKNOWN)
+    events["sources"] = events["sources"].fillna("")
+
+    n_dated = events["earnings_date"].notna().sum()
+    log.info(
+        "picks events: %d/%d dated (%s)", n_dated, len(events),
+        ", ".join(f"{r.ticker} {r.earnings_date} [{r.status}]"
+                  for r in events.itertuples(index=False)),
+    )
+    return events
+
+
+# ---------------------------------------------------------------- T-1 freeze --
+def t1_date(earnings_date: date) -> date:
+    """Last trading day strictly before the report date."""
+    return pd.bdate_range(end=earnings_date - timedelta(days=1), periods=1)[0].date()
+
+
+def _fair_move_lookup() -> pd.DataFrame:
+    if config.FAIR_PARQUET.exists():
+        cols = ["ticker", "fair_move", "ci_low", "ci_high", "n_events"]
+        fair = pd.read_parquet(config.FAIR_PARQUET)
+        return fair[[c for c in cols if c in fair.columns]].drop_duplicates("ticker")
+    return pd.DataFrame(columns=["ticker", "fair_move", "ci_low", "ci_high", "n_events"])
+
+
+def t1_freeze(events: pd.DataFrame, today: date | None = None) -> pd.DataFrame:
+    """Freeze journal rows for names at T-1 (chains implied + model fair move).
+
+    Relies on the shared journal's contract: first write wins, and events on
+    or before `today` are refused — so a row can only ever be written strictly
+    before the print.
+    """
+    from ingest.chains import fetch_event_chain
+
+    today = today or date.today()
+    due = events[
+        events["earnings_date"].notna()
+        & events["status"].isin(["confirmed", "single_source"])
+    ].copy()
+    if due.empty:
+        return pd.DataFrame(columns=FIELDS)
+    due["earnings_date"] = pd.to_datetime(due["earnings_date"]).dt.date
+    due = due[(due["earnings_date"] > today)
+              & (due["earnings_date"].map(t1_date) <= today)]
+    if due.empty:
+        log.info("picks T-1 freeze: no names at T-1 today")
+        return pd.DataFrame(columns=FIELDS)
+
+    fair = _fair_move_lookup()
+    rows = []
+    for r in due.itertuples(index=False):
+        chain = fetch_event_chain(r.ticker, r.earnings_date, r.session)
+        summary = chain[0] if chain else {}
+        if not chain:
+            log.warning("picks T-1: no usable chain for %s — freezing without implied", r.ticker)
+        rows.append({
+            "portfolio": r.portfolio, "ticker": r.ticker,
+            "earnings_date": r.earnings_date, "session": r.session,
+            "status": r.status, "sources": r.sources,
+            "source_agreement": r.status, **summary,
+        })
+    frame = pd.DataFrame(rows).merge(fair, on="ticker", how="left")
+    registered = predictions.register(
+        frame, today=today, path=PICKS_PREDICTIONS_CSV, fields=FIELDS
+    )
+    if len(registered):
+        log.info("picks T-1 freeze: journaled %s",
+                 ", ".join(registered["ticker"].astype(str)))
+    return registered
+
+
+def run(today: date | None = None) -> pd.DataFrame:
+    from picks.nav import load_rules
+
+    config.ensure_dirs()
+    rules = load_rules()
+    events = resolve_dates(rules, today=today)
+    events.to_parquet(PICKS_EVENTS_PARQUET, index=False)
+    t1_freeze(events, today=today)
+    return events
+
+
+if __name__ == "__main__":
+    config.setup_logging()
+    run()
