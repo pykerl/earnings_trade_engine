@@ -1,0 +1,28 @@
+# "John and Paul picks" competition — pre-registration rules (plan_picks_tab §1).
+# Frozen at build time (2026-07-20). Paper tracking only; no execution anywhere.
+
+portfolios:
+  John:
+    capital: 10000.00
+    allocation_per_name: 1666.67
+    tickers: [AMD, ACHR, QBTS, DSP, WMT, RXRX]
+  PaulMeme:
+    capital: 10000.00
+    allocation_per_name: 2000.00
+    tickers: [NVDA, GME, LULU, BBWI, META]
+
+benchmarks: [SPY, QQQ]        # $10k each, same inception close, same dividend treatment
+
+rules:
+  inception: "first available trading close on or after 2026-07-20"
+  inception_earliest: "2026-07-20"
+  end_date: "2026-09-04"       # final leaderboard freezes after NVDA/LULU/GME wrap
+  weighting: "equal weight, fractional shares = allocation / entry close, computed once"
+  rebalancing: "none — buy and hold, no substitutions"
+  dividends: "credited as cash on ex-date; cash sits uninvested"
+  corporate_actions: "splits via adjusted share counts; every detected action is logged"
+  winner: "highest ending NAV"
+  secondary_awards:
+    - "best risk-adjusted (return / realized vol)"
+    - "best single-name contribution"
+    - "smallest max drawdown"
