@@ -1,4 +1,4 @@
-.PHONY: setup daily weekly test refresh-all av-backfill picks-postmortem
+.PHONY: setup daily weekly test refresh-all av-backfill picks-postmortem picks-live
 
 # Value engine (plan_value.md §7): ~30 min/week — refresh prices, rescore,
 # regenerate memos + the Value tabs, flag new filings on held/watched names.
@@ -26,6 +26,11 @@ refresh-all:
 # provisional until the end date, FINAL after.
 picks-postmortem:
 	uv run python -m picks.postmortem
+
+# Refresh the picks tab with live intraday quotes (unofficial overlay; the
+# close-only NAV history is never touched) and rebuild the dashboard.
+picks-live:
+	uv run python -m picks.intraday --dashboard
 
 # Burn today's Alpha Vantage ration on the backfill queue (25 calls/day).
 av-backfill:

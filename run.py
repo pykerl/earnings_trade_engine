@@ -95,6 +95,10 @@ def cmd_daily(args) -> int:
             picks_nav.run()
             picks_events.run(today=today)
             picks_enrich.run()
+
+            from picks import intraday as picks_intraday
+
+            picks_intraday.fetch_snapshot()
         except Exception as exc:
             log.warning("picks pipeline failed (non-fatal, tab shows last data): %s", exc)
 

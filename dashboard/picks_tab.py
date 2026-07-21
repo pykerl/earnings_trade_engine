@@ -37,6 +37,7 @@ def load_inputs() -> dict:
 
     from picks.events import PICKS_EVENTS_PARQUET, PICKS_PREDICTIONS_CSV
     from picks.enrich import ENRICHED_PARQUET
+    from picks.intraday import INTRADAY_PARQUET
     from picks.nav import INCEPTION_PARQUET, NAV_PARQUET, POSITIONS_PARQUET, load_rules
 
     return {
@@ -47,7 +48,39 @@ def load_inputs() -> dict:
         "events": _opt(PICKS_EVENTS_PARQUET),
         "enriched": _opt(ENRICHED_PARQUET),
         "journal": _opt(PICKS_PREDICTIONS_CSV, pd.read_csv),
+        "intraday": _opt(INTRADAY_PARQUET),
     }
+
+
+def live_overlay(data: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.Timestamp | None]:
+    """(nav, positions, asof) with an intraday row appended when it is newer
+    than the last official close — the frozen close-only history is never
+    modified, and the overlay is dropped the moment a close for that day
+    becomes official."""
+    nav, positions, intr = data.get("nav"), data.get("positions"), data.get("intraday")
+    if intr is None or intr.empty or nav is None or nav.empty \
+            or positions is None or positions.empty:
+        return nav, positions, None
+    asof = pd.Timestamp(intr["asof"].max())
+    asof_date = asof.tz_convert("America/New_York").date()
+    if asof_date <= nav["date"].max():
+        return nav, positions, None
+    latest = positions[positions["date"] == positions["date"].max()].copy()
+    live = latest.merge(intr[["ticker", "last"]], on="ticker", how="left")
+    live["close"] = live["last"].fillna(live["close"])  # no bars -> last official close
+    live["value"] = live["shares"] * live["close"]
+    live["date"] = asof_date
+    live = live.drop(columns=["last"])
+    positions_live = pd.concat([positions, live], ignore_index=True)
+    nav_rows = (
+        live.assign(tot=live["value"] + live["cash"])
+        .groupby("portfolio")
+        .agg(nav=("tot", "sum"), cash=("cash", "sum"))
+        .reset_index()
+    )
+    nav_rows["date"] = asof_date
+    nav_live = pd.concat([nav, nav_rows[nav.columns.tolist()]], ignore_index=True)
+    return nav_live, positions_live, asof
 
 
 def _money(v: float) -> str:
@@ -59,7 +92,9 @@ def _pct(v: float, digits: int = 1) -> str:
 
 
 # ---------------------------------------------------------------- scoreboard --
-def scoreboard(nav: pd.DataFrame, rules: dict, today: date) -> str:
+def scoreboard(
+    nav: pd.DataFrame, rules: dict, today: date, asof: pd.Timestamp | None = None
+) -> str:
     last_day = nav["date"].max()
     latest = nav[nav["date"] == last_day].set_index("portfolio")["nav"]
     dates = sorted(nav["date"].unique())
@@ -90,9 +125,15 @@ def scoreboard(nav: pd.DataFrame, rules: dict, today: date) -> str:
         f'<div class=tile><div class=v>{days_left}</div>'
         f'<div class=k>trading days left (ends {end})</div></div>'
     )
+    if asof is not None:
+        stamp = asof.tz_convert("America/New_York").strftime("%H:%M ET %b %d")
+        basis = (f"<b>Live {stamp}</b> — intraday quotes, unofficial; official NAV "
+                 f"freezes at each close (last official: {sorted(nav['date'].unique())[-2]})")
+    else:
+        basis = f"Through {last_day} close"
     return (
         f"<div class=tiles>{''.join(tiles)}</div>"
-        f"<p class=muted>Through {last_day} close · pre-registered {rules['rules']['inception_earliest']}, "
+        f"<p class=muted>{basis} · pre-registered {rules['rules']['inception_earliest']}, "
         f"buy-and-hold, dividends as uninvested cash · winner: highest ending NAV.</p>"
     )
 
@@ -432,15 +473,20 @@ def render_picks_tab(today: date, data: dict | None = None) -> str:
     if rules is None or nav is None or nav.empty:
         return intro + ("<p class=muted>No NAV history yet — run <code>picks.nav</code> "
                         "to freeze inception.</p>")
+    nav_live, pos_live, asof = live_overlay(data)
+    live_note = (" <span class=muted>(live intraday, unofficial)</span>"
+                 if asof is not None else "")
     return (
         intro
-        + scoreboard(nav, rules, today)
-        + race_chart(nav, data.get("events"), rules)
-        + "<h2>Holdings</h2>"
-        + holdings_table("John", data["inception"], data.get("positions"),
+        + scoreboard(nav_live, rules, today, asof=asof)
+        + race_chart(nav_live, data.get("events"), rules)
+        + f"<h2>Holdings{live_note}</h2>"
+        + holdings_table("John", data["inception"], pos_live,
                          data.get("events"), data.get("enriched"))
-        + holdings_table("PaulMeme", data["inception"], data.get("positions"),
+        + holdings_table("PaulMeme", data["inception"], pos_live,
                          data.get("events"), data.get("enriched"))
+        # event log + risk stats stay on official closes: realized moves and
+        # vol/beta must not mix in a partial trading day
         + event_log(data.get("events"), data.get("journal"), data.get("positions"), today)
         + attribution(nav, data.get("positions"))
     )
