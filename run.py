@@ -86,6 +86,18 @@ def cmd_daily(args) -> int:
     squeeze = squeeze_mod.run(today=today)
     plan = build_trade_plan(scored, today=today)
 
+    if not args.fixtures:  # picks race: real quotes only, and never fatal to the run
+        try:
+            from picks import enrich as picks_enrich
+            from picks import events as picks_events
+            from picks import nav as picks_nav
+
+            picks_nav.run()
+            picks_events.run(today=today)
+            picks_enrich.run()
+        except Exception as exc:
+            log.warning("picks pipeline failed (non-fatal, tab shows last data): %s", exc)
+
     banner = FIXTURE_BANNER if args.fixtures else ""
     html_path, csv_path = dashboard_daily.run(
         scored=scored, run_date=today, banner=banner, plan=plan, squeeze=squeeze
