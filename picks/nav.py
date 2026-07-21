@@ -31,6 +31,7 @@ log = logging.getLogger("ete.picks_nav")
 
 PICKS_YAML = config.REPO_ROOT / "config" / "picks.yaml"
 INCEPTION_PARQUET = config.DATA_DIR / "picks_inception.parquet"
+INCEPTION_CSV = config.LOG_DIR / "picks_inception.csv"  # committed record (data/ is gitignored)
 NAV_PARQUET = config.DATA_DIR / "picks_nav.parquet"
 POSITIONS_PARQUET = config.DATA_DIR / "picks_positions.parquet"
 ACTIONS_CSV = config.DATA_DIR / "picks_actions.csv"
@@ -106,6 +107,10 @@ def build_inception(rules: dict, closes: pd.DataFrame) -> pd.DataFrame:
 
 def load_or_freeze_inception(rules: dict, closes: pd.DataFrame) -> pd.DataFrame:
     fresh = build_inception(rules, closes)
+    if not INCEPTION_PARQUET.exists() and INCEPTION_CSV.exists():
+        # fresh container: data/ is ephemeral, the committed CSV is the record
+        pd.read_csv(INCEPTION_CSV).to_parquet(INCEPTION_PARQUET, index=False)
+        log.info("inception restored from committed %s", INCEPTION_CSV)
     if INCEPTION_PARQUET.exists():
         frozen = pd.read_parquet(INCEPTION_PARQUET)
         merged = frozen.merge(fresh, on=["portfolio", "ticker"], suffixes=("_frozen", "_new"))
@@ -122,6 +127,9 @@ def load_or_freeze_inception(rules: dict, closes: pd.DataFrame) -> pd.DataFrame:
         )
         return frozen
     fresh.to_parquet(INCEPTION_PARQUET, index=False)
+    if not INCEPTION_CSV.exists():  # the durable copy is first-write-only too
+        INCEPTION_CSV.parent.mkdir(parents=True, exist_ok=True)
+        fresh.to_csv(INCEPTION_CSV, index=False)
     log.info(
         "INCEPTION FROZEN at %s close: %d positions written once",
         fresh["inception_date"].iloc[0], len(fresh),

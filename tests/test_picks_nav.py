@@ -75,6 +75,7 @@ def test_split_and_dividend_handling(tmp_path, monkeypatch):
 
 def test_inception_immutable(tmp_path, monkeypatch):
     monkeypatch.setattr(nav, "INCEPTION_PARQUET", tmp_path / "inc.parquet")
+    monkeypatch.setattr(nav, "INCEPTION_CSV", tmp_path / "inc.csv")
     closes, _, _ = _frames()
     first = nav.load_or_freeze_inception(RULES, closes)
     # identical re-run: fine, returns frozen
