@@ -1,10 +1,10 @@
-# Options pre-registration scorecard — through 2026-07-21
+# Options pre-registration scorecard — through 2026-07-22
 
-23 resolved events; 2 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+41 resolved events; 2 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
-- realized |move| landed inside the frozen implied move in **61%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.88** · median realized/fair: **1.04**
+- realized |move| landed inside the frozen implied move in **68%** of events (vol premium says this should exceed ~50%)
+- median realized/implied: **0.67** · median realized/fair: **0.97**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
 - **1/2 winners · net P&L $-145** (gross credits/debits $582)
