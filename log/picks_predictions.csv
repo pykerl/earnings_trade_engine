@@ -1,0 +1,2 @@
+registered_at,portfolio,ticker,earnings_date,session,expiry,spot,atm_strike,straddle_bid,straddle_mid,straddle_ask,implied_move_bid,implied_move_mid,implied_move_ask,fair_move,ci_low,ci_high,n_events,source_agreement,sources
+2026-07-28T20:42:01+00:00,PaulMeme,META,2026-07-29,AMC,2026-07-31,593.4099731445312,592.5,48.5,49.25,50.0,0.08173101598376291,0.08299489767423347,0.08425877936470402,0.07360363378323805,0.06046248761172872,0.08674477995474737,12,confirmed,"yfinance,nasdaq"
