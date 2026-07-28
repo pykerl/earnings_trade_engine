@@ -44,7 +44,17 @@ def ingest_real(today: date, refresh_all: bool) -> None:
     else:
         log.info("prices fresh (< %dd); skipping (use --refresh-all to force)", PRICES_MAX_AGE_DAYS)
 
-    if refresh_all or _stale(config.EVENTS_PARQUET, CALENDAR_MAX_AGE_HOURS):
+    def _events_empty() -> bool:
+        # a failed run can leave a fresh-mtime but EMPTY events file behind;
+        # freshness means nothing if there is nothing in it
+        try:
+            import pandas as pd
+
+            return pd.read_parquet(config.EVENTS_PARQUET).empty
+        except Exception:
+            return True
+
+    if refresh_all or _stale(config.EVENTS_PARQUET, CALENDAR_MAX_AGE_HOURS) or _events_empty():
         cal.run(today=today)
         earnings_history.run(today=today)
     else:
