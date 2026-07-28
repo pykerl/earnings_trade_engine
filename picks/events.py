@@ -179,6 +179,16 @@ def run(today: date | None = None) -> pd.DataFrame:
     config.ensure_dirs()
     rules = load_rules()
     events = resolve_dates(rules, today=today)
+    if events["earnings_date"].isna().all() and PICKS_EVENTS_PARQUET.exists():
+        prior = pd.read_parquet(PICKS_EVENTS_PARQUET)
+        if prior["earnings_date"].notna().any():
+            # 0/11 resolved when we had dates before = source outage (stale
+            # Yahoo cookie), not eleven simultaneously-pulled dates. Keeping
+            # the prior file also keeps a due T-1 freeze from being skipped.
+            raise RuntimeError(
+                "all picks earnings dates unresolved but prior run had dates — "
+                "source outage; keeping the previous picks_events.parquet"
+            )
     events.to_parquet(PICKS_EVENTS_PARQUET, index=False)
     t1_freeze(events, today=today)
     return events

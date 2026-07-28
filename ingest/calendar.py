@@ -18,6 +18,7 @@ import logging
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
+from pathlib import Path
 
 import pandas as pd
 
@@ -236,6 +237,20 @@ def run(universe: pd.DataFrame | None = None, today: date | None = None) -> pd.D
     sp500 = set(universe["ticker"])
 
     yf_events = fetch_yfinance_calendar(sorted(sp500), today=today)
+    if yf_events.empty and len(sp500) > 100:
+        # 0-of-500 is a Yahoo auth failure (stale cookie -> blocked consent
+        # host), not an empty calendar — twice now. Clear the cookie cache and
+        # retry once before giving up.
+        cookie_db = Path.home() / ".cache" / "py-yfinance" / "cookies.db"
+        log.warning("yfinance calendar returned 0/%d — clearing %s and retrying once",
+                    len(sp500), cookie_db)
+        cookie_db.unlink(missing_ok=True)
+        yf_events = fetch_yfinance_calendar(sorted(sp500), today=today)
+        if yf_events.empty:
+            raise RuntimeError(
+                "yfinance calendar still empty after cookie reset — refusing to "
+                "overwrite events_upcoming.parquet with an empty frame"
+            )
     cross = {
         "nasdaq": fetch_nasdaq_calendar(today=today),
         "finnhub": fetch_finnhub_calendar(today=today),
