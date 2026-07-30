@@ -4,7 +4,7 @@ import pandas as pd
 
 from picks import events
 
-RULES = {
+RULES = events_RULES = {
     "portfolios": {
         "John": {"tickers": ["AAA", "BBB"]},
         "PaulMeme": {"tickers": ["CCC"]},
@@ -83,3 +83,29 @@ def test_t1_freeze_only_at_t1_and_first_write_wins(tmp_path, monkeypatch):
     # a run ON the event day never writes (journal refuses ev <= today)
     assert events.t1_freeze(evs, today=date(2026, 8, 4)).empty
     assert len(pd.read_csv(tmp_path / "j.csv")) == 1
+
+
+def test_reported_names_keep_their_past_date(tmp_path, monkeypatch):
+    monkeypatch.setattr(events, "PICKS_EVENTS_PARQUET", tmp_path / "ev.parquet")
+    monkeypatch.setattr(events, "PICKS_PREDICTIONS_CSV", tmp_path / "j.csv")
+    monkeypatch.setattr(events, "resolve_dates", lambda rules, today=None: pd.DataFrame([
+        {"ticker": "AAA", "portfolio": "John", "earnings_date": pd.NaT,
+         "session": "unknown", "status": "unresolved", "sources": ""},
+        {"ticker": "BBB", "portfolio": "John", "earnings_date": date(2026, 8, 12),
+         "session": "BMO", "status": "confirmed", "sources": "yfinance,nasdaq"},
+        {"ticker": "CCC", "portfolio": "PaulMeme", "earnings_date": date(2026, 8, 26),
+         "session": "AMC", "status": "confirmed", "sources": "yfinance,nasdaq"},
+    ]))
+    monkeypatch.setattr("picks.nav.load_rules", lambda: events_RULES)
+    prior = pd.DataFrame([
+        {"ticker": "AAA", "portfolio": "John", "earnings_date": date(2026, 7, 29),
+         "session": "AMC", "status": "confirmed", "sources": "yfinance,nasdaq"},
+        {"ticker": "BBB", "portfolio": "John", "earnings_date": date(2026, 8, 12),
+         "session": "BMO", "status": "confirmed", "sources": "yfinance,nasdaq"},
+        {"ticker": "CCC", "portfolio": "PaulMeme", "earnings_date": date(2026, 8, 26),
+         "session": "AMC", "status": "confirmed", "sources": "yfinance,nasdaq"},
+    ])
+    prior.to_parquet(tmp_path / "ev.parquet")
+    out = events.run(today=date(2026, 7, 30)).set_index("ticker")
+    assert out.loc["AAA", "status"] == "reported"
+    assert pd.Timestamp(out.loc["AAA", "earnings_date"]).date() == date(2026, 7, 29)

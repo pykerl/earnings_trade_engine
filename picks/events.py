@@ -179,6 +179,28 @@ def run(today: date | None = None) -> pd.DataFrame:
     config.ensure_dirs()
     rules = load_rules()
     events = resolve_dates(rules, today=today)
+    today_ = today or date.today()
+    if PICKS_EVENTS_PARQUET.exists():
+        # names that already reported drop out of the forward calendars; their
+        # dates are history, not unresolved — backfill from the prior record
+        prior = pd.read_parquet(PICKS_EVENTS_PARQUET)
+        past = prior[prior["earnings_date"].notna()].copy()
+        if PICKS_PREDICTIONS_CSV.exists():
+            # the committed journal is the durable record of frozen events —
+            # it survives even if the parquet was overwritten during an outage
+            j = pd.read_csv(PICKS_PREDICTIONS_CSV)
+            j = j.rename(columns={"source_agreement": "status"})[
+                ["ticker", "portfolio", "earnings_date", "session", "status", "sources"]
+            ]
+            past = pd.concat([past, j[~j["ticker"].isin(past["ticker"])]],
+                             ignore_index=True)
+        past["earnings_date"] = pd.to_datetime(past["earnings_date"]).dt.date
+        past = past[past["earnings_date"] <= today_].set_index("ticker")
+        for i, r in events.iterrows():
+            if pd.isna(r["earnings_date"]) and r["ticker"] in past.index:
+                p = past.loc[r["ticker"]]
+                events.loc[i, ["earnings_date", "session", "status", "sources"]] = [
+                    p["earnings_date"], p["session"], "reported", p["sources"]]
     if events["earnings_date"].isna().all() and PICKS_EVENTS_PARQUET.exists():
         prior = pd.read_parquet(PICKS_EVENTS_PARQUET)
         if prior["earnings_date"].notna().any():
