@@ -36,7 +36,8 @@ NAV_PARQUET = config.DATA_DIR / "picks_nav.parquet"
 POSITIONS_PARQUET = config.DATA_DIR / "picks_positions.parquet"
 ACTIONS_CSV = config.DATA_DIR / "picks_actions.csv"
 
-NAV_TOL = 0.01  # a cent of NAV tolerance when re-deriving historical rows
+NAV_TOL = 0.01          # re-derivation noise we don't even mention
+RESTATEMENT_TOL = 1.00  # vendor restatements up to $1 of NAV: log + keep frozen rows
 
 
 def load_rules(path=PICKS_YAML) -> dict:
@@ -188,18 +189,37 @@ def compute_nav(positions: pd.DataFrame) -> pd.DataFrame:
 
 
 def append_only_write(nav: pd.DataFrame) -> pd.DataFrame:
-    """Assert existing rows unchanged (esp. inception), then write the union."""
-    if NAV_PARQUET.exists():
-        prior = pd.read_parquet(NAV_PARQUET)
-        merged = prior.merge(nav, on=["date", "portfolio"], suffixes=("_old", "_new"), how="inner")
-        if len(merged):
-            drift = (merged["nav_old"] - merged["nav_new"]).abs().max()
-            assert drift <= NAV_TOL, (
-                f"historical NAV rows changed by ${drift:.2f} — append-only contract "
-                "violated (bad price restatement?); refusing to overwrite"
+    """First write wins, forever: stored rows are the official record and are
+    never replaced — recomputation only appends genuinely new (date, portfolio)
+    rows. Free-data vendors restate old closes by pennies (LULU's 2026-07-30
+    close moved a fraction of a cent the next day); that gets logged and the
+    frozen row kept. Drift beyond RESTATEMENT_TOL means something is actually
+    wrong (bad split handling, wrong ticker data) and still hard-fails."""
+    if not NAV_PARQUET.exists():
+        nav.to_parquet(NAV_PARQUET, index=False)
+        return nav
+    prior = pd.read_parquet(NAV_PARQUET)
+    merged = prior.merge(nav, on=["date", "portfolio"], suffixes=("_old", "_new"), how="inner")
+    if len(merged):
+        drift = float((merged["nav_old"] - merged["nav_new"]).abs().max())
+        assert drift <= RESTATEMENT_TOL, (
+            f"historical NAV re-derives ${drift:.2f} different — beyond any plausible "
+            "vendor restatement; refusing to write (check splits/dividends/ticker data)"
+        )
+        if drift > NAV_TOL:
+            log.warning(
+                "vendor restated history (NAV re-derives up to $%.2f different) — "
+                "frozen rows kept as first written", drift,
             )
-    nav.to_parquet(NAV_PARQUET, index=False)
-    return nav
+    prior_keys = set(zip(prior["date"], prior["portfolio"]))
+    new_rows = nav[[(d, p) not in prior_keys
+                    for d, p in zip(nav["date"], nav["portfolio"])]]
+    out = (
+        pd.concat([prior, new_rows], ignore_index=True)
+        .sort_values(["portfolio", "date"]).reset_index(drop=True)
+    )
+    out.to_parquet(NAV_PARQUET, index=False)
+    return out
 
 
 def run() -> pd.DataFrame:

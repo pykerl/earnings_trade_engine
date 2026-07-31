@@ -109,8 +109,14 @@ def test_nav_append_only(tmp_path, monkeypatch):
         "date": [date(2026, 7, 22)], "portfolio": ["John"],
         "nav": [10200.0], "cash": [0.0]})], ignore_index=True)
     nav.append_only_write(grown)
-    # restating history -> assert-fail
+    # small vendor restatement: frozen row kept as first written, no error
+    nudged = grown.copy()
+    nudged.loc[0, "nav"] = 10000.09
+    out = nav.append_only_write(nudged)
+    assert out[(out["date"] == date(2026, 7, 20)) & (out["portfolio"] == "John")][
+        "nav"].iloc[0] == pytest.approx(10000.0)
+    # large drift is a real defect, not a restatement -> assert-fail
     bad = grown.copy()
     bad.loc[0, "nav"] = 9000.0
-    with pytest.raises(AssertionError, match="append-only"):
+    with pytest.raises(AssertionError, match="vendor restatement"):
         nav.append_only_write(bad)
