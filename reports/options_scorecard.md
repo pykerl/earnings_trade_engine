@@ -1,16 +1,17 @@
-# Options pre-registration scorecard — through 2026-07-31
+# Options pre-registration scorecard — through 2026-08-03
 
-259 resolved events; 15 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+274 resolved events; 16 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
-- realized |move| landed inside the frozen implied move in **81%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.49** · median realized/fair: **0.89**
+- realized |move| landed inside the frozen implied move in **82%** of events (vol premium says this should exceed ~50%)
+- median realized/implied: **0.49** · median realized/fair: **0.88**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
-- **2/15 winners · net P&L $-2,414** (gross credits/debits $8,008)
+- **3/16 winners · net P&L $-2,252** (gross credits/debits $8,376)
 
 | Ticker | Event | Structure | Implied | Realized | P&L |
 |---|---|---|---|---|---|
+| XOM | 2026-07-31 BMO | iron fly | ±4.6% | -1.0% | $162 |
 | BAC | 2026-07-14 BMO | iron fly | ±3.7% | +1.9% | $66 |
 | F | 2026-07-28 AMC | iron fly | ±7.6% | +2.1% | $25 |
 | BA | 2026-07-28 BMO | iron fly | ±6.8% | +4.8% | $-89 |
@@ -37,16 +38,16 @@ make money shorted and cheap events should make money bought.
 |---|---|---|---|---|
 | cheap (model: long vol) | 4 | $-148 | $-367 | $-367 |
 | neutral (model: no trade) | 17 | $-2,077 | $-149 | $0 |
-| rich (model: short vol) | 106 | $12,153 | $-38,678 | $12,153 |
+| rich (model: short vol) | 114 | $14,533 | $-42,865 | $14,533 |
 
-- **Model-aligned total: $11,786** vs always-short-everything $9,928 (n=127)
+- **Model-aligned total: $14,166** vs always-short-everything $12,308 (n=135)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
-| 29 | $2,561 | $1,751 |
+| 29 | $2,443 | $1,633 |
 | 30 | $-9,325 | $-5,736 |
-| 31 | $16,692 | $15,771 |
+| 31 | $19,190 | $18,269 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
 _delayed quotes flatter both sides. Season-end review adds calibration bands,_
