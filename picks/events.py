@@ -16,7 +16,8 @@ log/picks_predictions.csv via the shared first-write-wins journal writer.
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -77,7 +78,7 @@ def resolve_dates(rules: dict, today: date | None = None) -> pd.DataFrame:
     unresolved names keep a row (earnings_date=NaT for unresolved) so the tab
     always shows all 11 names — nothing is silently dropped.
     """
-    today = today or date.today()
+    today = today or market_today()
     horizon = date.fromisoformat(rules["rules"]["end_date"]) + timedelta(days=10)
     uni = picks_universe(rules)
     tickers = uni["ticker"].tolist()
@@ -136,7 +137,7 @@ def t1_freeze(events: pd.DataFrame, today: date | None = None) -> pd.DataFrame:
     """
     from ingest.chains import fetch_event_chain
 
-    today = today or date.today()
+    today = today or market_today()
     due = events[
         events["earnings_date"].notna()
         & events["status"].isin(["confirmed", "single_source"])
@@ -173,13 +174,21 @@ def t1_freeze(events: pd.DataFrame, today: date | None = None) -> pd.DataFrame:
     return registered
 
 
+def market_today() -> date:
+    """The trading-calendar date. An evening run in New York is next-day UTC,
+    which once skipped a T-1 freeze for a next-morning BMO print — 'today'
+    here must always mean the market's today."""
+    return datetime.now(ZoneInfo("America/New_York")).date()
+
+
 def run(today: date | None = None) -> pd.DataFrame:
     from picks.nav import load_rules
 
+    today = today or market_today()
     config.ensure_dirs()
     rules = load_rules()
     events = resolve_dates(rules, today=today)
-    today_ = today or date.today()
+    today_ = today
     if PICKS_EVENTS_PARQUET.exists():
         # names that already reported drop out of the forward calendars; their
         # dates are history, not unresolved — backfill from the prior record

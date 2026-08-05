@@ -16,7 +16,8 @@ import argparse
 import logging
 import sys
 import time
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from common import config
@@ -75,7 +76,8 @@ def cmd_daily(args) -> int:
     from model import fair_move
     from scoring import rank
 
-    today = date.fromisoformat(args.today) if args.today else date.today()
+    today = (date.fromisoformat(args.today) if args.today
+             else datetime.now(ZoneInfo("America/New_York")).date())  # market time, not UTC
     config.ensure_dirs()
 
     if args.fixtures:
@@ -103,7 +105,11 @@ def cmd_daily(args) -> int:
             from picks import nav as picks_nav
 
             picks_nav.run()
-            picks_events.run(today=today)
+            # no `today=` here: picks T-1 freezes reckon dates in market time
+            # (an evening ET run is already tomorrow in UTC)
+            picks_events.run(
+                today=date.fromisoformat(args.today) if args.today else None
+            )
             picks_enrich.run()
 
             from picks import intraday as picks_intraday
@@ -180,7 +186,8 @@ def cmd_weekly(args) -> int:
     from memos import generator as memo_gen
     from valuation import lenses
 
-    today = date.fromisoformat(args.today) if args.today else date.today()
+    today = (date.fromisoformat(args.today) if args.today
+             else datetime.now(ZoneInfo("America/New_York")).date())  # market time, not UTC
     config.ensure_dirs()
 
     if args.refresh_all or not config.VALUE_UNIVERSE_PARQUET.exists():
@@ -268,7 +275,8 @@ def cmd_ideas(args) -> int:
     from memos import growth_memos
     from positions import construct
 
-    today = date.fromisoformat(args.today) if args.today else date.today()
+    today = (date.fromisoformat(args.today) if args.today
+             else datetime.now(ZoneInfo("America/New_York")).date())  # market time, not UTC
     config.ensure_dirs()
 
     mentions_mod.run(today=today)
