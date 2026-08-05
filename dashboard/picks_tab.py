@@ -328,6 +328,18 @@ def event_log(
                 "run <code>picks.events</code>.</p>")
     j = (journal.set_index("ticker") if journal is not None and len(journal)
          else pd.DataFrame())
+    corrections_path = config.LOG_DIR / "picks_corrections.csv"
+    corrected: dict[str, float] = {}
+    corr_notes: list[str] = []
+    if corrections_path.exists():
+        for c in pd.read_csv(corrections_path).itertuples(index=False):
+            if c.scope == "journal" and c.field == "implied_move_mid":
+                t = str(c.key).split("/")[0]
+                corrected[t] = float(c.corrected_value)
+                corr_notes.append(
+                    f"† {t}: frozen implied {float(c.frozen_value):.1%} re-based to "
+                    f"{float(c.corrected_value):.1%} — {html.escape(str(c.reason))}"
+                )
     rows = []
     for r in events.sort_values("earnings_date", na_position="last").itertuples(index=False):
         ev = pd.Timestamp(r.earnings_date).date() if pd.notna(r.earnings_date) else None
@@ -336,7 +348,10 @@ def event_log(
         if frozen:
             row = j.loc[r.ticker]
             iv, fv = row.get("implied_move_mid"), row.get("fair_move")
-            impl = f"{iv:.1%}" if np.isfinite(iv) else "—"
+            if r.ticker in corrected:
+                impl = f"{corrected[r.ticker]:.1%}†"
+            else:
+                impl = f"{iv:.1%}" if np.isfinite(iv) else "—"
             fair = f"{fv:.1%}" if np.isfinite(fv) else "—"
         realized, impact = (_realized_move(positions, r.ticker, ev, r.session)
                             if ev else (np.nan, np.nan))
@@ -362,12 +377,14 @@ def event_log(
     head = ("<tr><th>portfolio</th><th>name</th><th>date</th><th>session</th>"
             "<th>implied (T-1)</th><th>fair (T-1)</th><th>realized</th>"
             "<th>NAV impact $</th><th>state</th></tr>")
+    notes_html = "".join(f"<p class=muted>{n}</p>" for n in corr_notes)
     return (
         "<h2>Earnings event log</h2>"
         "<p class=muted>Implied/fair freeze at T-1 into the journal (first write wins); "
         "realized move measured over the reaction session. Dates resolve live with a "
         "two-source cross-check — ⚠︎ marks a source conflict.</p>"
         f"<div class=tablewrap><table>{head}{''.join(rows)}</table></div>"
+        + notes_html
     )
 
 

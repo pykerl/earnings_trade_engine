@@ -1,0 +1,3 @@
+corrected_at,scope,key,field,frozen_value,corrected_value,reason,evidence
+2026-08-05T20:15:21+00:00,nav,2026-08-04/John,nav,10354.67048673159,10914.87905,vendor bad print: Yahoo served QBTS 2026-08-04 close=16.21 on the evening of Aug 4; Yahoo (next day) and Nasdaq API both confirm 21.83,nasdaq api chart 8/4 last=21.83; yf OHLC 20.34/21.90/20.34/21.83
+2026-08-05T20:15:21+00:00,journal,QBTS/2026-08-06,implied_move_mid,0.339914,0.252405,"same bad print: T-1 spot recorded 16.21, true last 21.83; straddle dollars kept, implied re-based to the true spot. Original journal row NOT edited.",implied = frozen straddle$ (5.51) / corrected spot (21.83)
