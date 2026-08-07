@@ -1,24 +1,27 @@
-# Options pre-registration scorecard — through 2026-08-06
+# Options pre-registration scorecard — through 2026-08-07
 
-384 resolved events; 16 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+414 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
 - realized |move| landed inside the frozen implied move in **84%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.45** · median realized/fair: **0.83**
+- median realized/implied: **0.44** · median realized/fair: **0.80**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
-- **3/16 winners · net P&L $-2,252** (gross credits/debits $8,376)
+- **4/19 winners · net P&L $-2,489** (gross credits/debits $9,498)
 
 | Ticker | Event | Structure | Implied | Realized | P&L |
 |---|---|---|---|---|---|
 | XOM | 2026-07-31 BMO | iron fly | ±4.6% | -1.0% | $162 |
+| OXY | 2026-08-05 AMC | iron fly | ±7.2% | +4.1% | $87 |
 | BAC | 2026-07-14 BMO | iron fly | ±3.7% | +1.9% | $66 |
 | F | 2026-07-28 AMC | iron fly | ±7.6% | +2.1% | $25 |
 | BA | 2026-07-28 BMO | iron fly | ±6.8% | +4.8% | $-89 |
+| SMCI | 2026-08-04 AMC | iron fly | ±19.8% | -4.3% | $-104 |
 | T | 2026-07-22 BMO | iron fly | ±4.9% | +3.5% | $-109 |
 | CMG | 2026-07-29 AMC | iron fly | ±10.1% | +12.5% | $-120 |
 | COIN | 2026-07-30 AMC | iron fly | ±13.2% | -10.6% | $-120 |
 | C | 2026-07-14 BMO | iron fly | ±4.5% | -5.3% | $-211 |
+| PLTR | 2026-08-03 AMC | iron fly | ±13.4% | +29.5% | $-220 |
 | GOOG | 2026-07-22 AMC | iron fly | ±7.0% | -6.9% | $-220 |
 | AMZN | 2026-07-30 AMC | iron fly | ±7.7% | +15.3% | $-220 |
 | META | 2026-07-29 AMC | iron fly | ±10.0% | -8.0% | $-220 |
@@ -36,18 +39,19 @@ make money shorted and cheap events should make money bought.
 
 | Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
 |---|---|---|---|---|
-| cheap (model: long vol) | 4 | $-148 | $-367 | $-367 |
-| neutral (model: no trade) | 17 | $-2,076 | $-150 | $0 |
-| rich (model: short vol) | 114 | $14,646 | $-42,978 | $14,646 |
+| cheap (model: long vol) | 5 | $-165 | $-407 | $-407 |
+| neutral (model: no trade) | 24 | $6,795 | $-11,132 | $0 |
+| rich (model: short vol) | 166 | $34,010 | $-82,100 | $34,010 |
 
-- **Model-aligned total: $14,279** vs always-short-everything $12,422 (n=135)
+- **Model-aligned total: $33,603** vs always-short-everything $40,640 (n=195)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $2,408 | $1,568 |
-| 30 | $-9,176 | $-5,558 |
+| 30 | $-9,220 | $-5,558 |
 | 31 | $19,190 | $18,269 |
+| 32 | $28,261 | $19,323 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
 _delayed quotes flatter both sides. Season-end review adds calibration bands,_
