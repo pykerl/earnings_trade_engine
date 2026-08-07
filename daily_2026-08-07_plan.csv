@@ -1,0 +1,2 @@
+ticker,name,structure,contracts,entry_side,entry_price,cash_flow,position_risk,position_max_gain,entry_by,earnings_date,session,expiry,spot,edge,score,implied_move_mid,fair_move,n_events
+CSCO,Cisco,iron fly,2,credit,469.99999999999994,939.9999999999999,460.0000000000001,939.9999999999999,2026-08-12,2026-08-12,AMC,2026-08-14,121.43000030517578,0.3545985368611618,1.7189101331927206,0.0813225724712371,0.06003444582161997,12
