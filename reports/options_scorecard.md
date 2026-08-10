@@ -1,10 +1,10 @@
-# Options pre-registration scorecard — through 2026-08-07
+# Options pre-registration scorecard — through 2026-08-10
 
-414 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+418 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
 - realized |move| landed inside the frozen implied move in **84%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.44** · median realized/fair: **0.80**
+- median realized/implied: **0.44** · median realized/fair: **0.81**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
 - **4/19 winners · net P&L $-2,489** (gross credits/debits $9,498)
@@ -39,19 +39,19 @@ make money shorted and cheap events should make money bought.
 
 | Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
 |---|---|---|---|---|
-| cheap (model: long vol) | 5 | $-165 | $-407 | $-407 |
-| neutral (model: no trade) | 24 | $6,795 | $-11,132 | $0 |
-| rich (model: short vol) | 166 | $34,010 | $-82,100 | $34,010 |
+| cheap (model: long vol) | 6 | $-385 | $-572 | $-572 |
+| neutral (model: no trade) | 24 | $6,844 | $-11,181 | $0 |
+| rich (model: short vol) | 168 | $36,110 | $-84,645 | $36,110 |
 
-- **Model-aligned total: $33,603** vs always-short-everything $40,640 (n=195)
+- **Model-aligned total: $35,538** vs always-short-everything $42,569 (n=198)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
-| 29 | $2,408 | $1,568 |
+| 29 | $2,457 | $1,568 |
 | 30 | $-9,220 | $-5,558 |
-| 31 | $19,190 | $18,269 |
-| 32 | $28,261 | $19,323 |
+| 31 | $19,292 | $18,371 |
+| 32 | $30,040 | $21,157 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
 _delayed quotes flatter both sides. Season-end review adds calibration bands,_
