@@ -189,20 +189,24 @@ def run(today: date | None = None) -> pd.DataFrame:
     rules = load_rules()
     events = resolve_dates(rules, today=today)
     today_ = today
-    if PICKS_EVENTS_PARQUET.exists():
-        # names that already reported drop out of the forward calendars; their
-        # dates are history, not unresolved — backfill from the prior record
-        prior = pd.read_parquet(PICKS_EVENTS_PARQUET)
-        past = prior[prior["earnings_date"].notna()].copy()
-        if PICKS_PREDICTIONS_CSV.exists():
-            # the committed journal is the durable record of frozen events —
-            # it survives even if the parquet was overwritten during an outage
-            j = pd.read_csv(PICKS_PREDICTIONS_CSV)
-            j = j.rename(columns={"source_agreement": "status"})[
-                ["ticker", "portfolio", "earnings_date", "session", "status", "sources"]
-            ]
-            past = pd.concat([past, j[~j["ticker"].isin(past["ticker"])]],
-                             ignore_index=True)
+    # names that already reported drop out of the forward calendars; their
+    # dates are history, not unresolved — backfill from the prior record,
+    # with the committed journal as the durable fallback (the parquet is an
+    # uncommitted cache and dies with the container)
+    past = (
+        pd.read_parquet(PICKS_EVENTS_PARQUET) if PICKS_EVENTS_PARQUET.exists()
+        else pd.DataFrame(columns=["ticker", "portfolio", "earnings_date",
+                                   "session", "status", "sources"])
+    )
+    past = past[past["earnings_date"].notna()].copy()
+    if PICKS_PREDICTIONS_CSV.exists():
+        j = pd.read_csv(PICKS_PREDICTIONS_CSV)
+        j = j.rename(columns={"source_agreement": "status"})[
+            ["ticker", "portfolio", "earnings_date", "session", "status", "sources"]
+        ]
+        past = pd.concat([past, j[~j["ticker"].isin(past["ticker"])]],
+                         ignore_index=True)
+    if len(past):
         past["earnings_date"] = pd.to_datetime(past["earnings_date"]).dt.date
         past = past[past["earnings_date"] <= today_].set_index("ticker")
         for i, r in events.iterrows():
