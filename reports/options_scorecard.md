@@ -1,10 +1,10 @@
-# Options pre-registration scorecard — through 2026-08-12
+# Options pre-registration scorecard — through 2026-08-13
 
-423 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+428 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
-- realized |move| landed inside the frozen implied move in **83%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.46** · median realized/fair: **0.81**
+- realized |move| landed inside the frozen implied move in **84%** of events (vol premium says this should exceed ~50%)
+- median realized/implied: **0.43** · median realized/fair: **0.79**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
 - **4/19 winners · net P&L $-2,473** (gross credits/debits $9,498)
@@ -40,18 +40,18 @@ make money shorted and cheap events should make money bought.
 | Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
 |---|---|---|---|---|
 | cheap (model: long vol) | 6 | $-385 | $-572 | $-572 |
-| neutral (model: no trade) | 24 | $6,844 | $-11,181 | $0 |
-| rich (model: short vol) | 166 | $34,433 | $-81,958 | $34,433 |
+| neutral (model: no trade) | 24 | $6,865 | $-11,202 | $0 |
+| rich (model: short vol) | 168 | $35,965 | $-84,500 | $35,965 |
 
-- **Model-aligned total: $33,861** vs always-short-everything $40,892 (n=196)
+- **Model-aligned total: $35,393** vs always-short-everything $42,446 (n=198)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $2,457 | $1,568 |
 | 30 | $-9,372 | $-5,710 |
-| 31 | $17,768 | $16,847 |
-| 32 | $30,040 | $21,157 |
+| 31 | $19,300 | $18,379 |
+| 32 | $30,061 | $21,157 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
 _delayed quotes flatter both sides. Season-end review adds calibration bands,_
