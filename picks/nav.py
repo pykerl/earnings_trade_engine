@@ -75,6 +75,59 @@ def fetch_market_data(rules: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     return closes, dividends.fillna(0.0), splits.fillna(0.0)
 
 
+BIG_MOVE = 0.10          # daily move that triggers the second-source cross-check
+CROSS_CHECK_TOL = 0.02   # max Yahoo-vs-Nasdaq disagreement before we refuse
+
+
+def _nasdaq_close(ticker: str, day) -> float | None:
+    """Independent close from the Nasdaq API; None when unavailable."""
+    from common.http import get_with_retries, make_session
+
+    try:
+        resp = get_with_retries(
+            make_session(),
+            f"https://api.nasdaq.com/api/quote/{ticker}/chart",
+            params={"assetclass": "stocks", "fromdate": day.isoformat(),
+                    "todate": day.isoformat()},
+            retries=2,
+        )
+        points = (resp.json().get("data") or {}).get("chart") or []
+        return float(points[-1]["z"]["value"]) if points else None
+    except Exception as exc:
+        log.warning("nasdaq cross-check unavailable for %s: %s", ticker, exc)
+        return None
+
+
+def validate_last_closes(closes: pd.DataFrame) -> None:
+    """Cross-check big single-day moves before they can freeze into NAV.
+
+    Yahoo has twice served a phantom QBTS close (~-22% day moves that never
+    happened) that poisoned frozen rows at first write, where the append-only
+    guard cannot help. Any name moving more than BIG_MOVE day-over-day gets
+    its close verified against the Nasdaq API; disagreement beyond
+    CROSS_CHECK_TOL aborts the run rather than writing a fiction."""
+    if len(closes) < 2:
+        return
+    last, prev = closes.iloc[-1], closes.iloc[-2]
+    day = closes.index[-1].date()
+    for t in closes.columns:
+        if not (np.isfinite(last[t]) and np.isfinite(prev[t]) and prev[t] > 0):
+            continue
+        if abs(last[t] / prev[t] - 1.0) <= BIG_MOVE:
+            continue
+        ref = _nasdaq_close(t, day)
+        if ref is None:
+            log.warning("%s moved %+.1f%% and Nasdaq cross-check unavailable — proceeding "
+                        "on Yahoo alone", t, 100 * (last[t] / prev[t] - 1))
+            continue
+        if abs(float(last[t]) / ref - 1.0) > CROSS_CHECK_TOL:
+            raise RuntimeError(
+                f"{t} close {last[t]:.2f} disagrees with Nasdaq {ref:.2f} on {day} "
+                f"after a >{BIG_MOVE:.0%} move — refusing to freeze a suspect print"
+            )
+        log.info("%s big move cross-checked ok (yahoo %.2f vs nasdaq %.2f)", t, last[t], ref)
+
+
 # --------------------------------------------------------------- inception --
 def build_inception(rules: dict, closes: pd.DataFrame) -> pd.DataFrame:
     """Entry price + frozen fractional shares per position (benchmarks incl.)."""
@@ -226,6 +279,7 @@ def run() -> pd.DataFrame:
     config.ensure_dirs()
     rules = load_rules()
     closes, dividends, splits = fetch_market_data(rules)
+    validate_last_closes(closes)
     inception = load_or_freeze_inception(rules, closes)
     positions = compute_positions(inception, closes, dividends, splits)
     positions.to_parquet(POSITIONS_PARQUET, index=False)

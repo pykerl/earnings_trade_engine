@@ -120,3 +120,18 @@ def test_nav_append_only(tmp_path, monkeypatch):
     bad.loc[0, "nav"] = 9000.0
     with pytest.raises(AssertionError, match="vendor restatement"):
         nav.append_only_write(bad)
+
+
+def test_big_move_cross_check(monkeypatch):
+    days = pd.bdate_range("2026-08-12", "2026-08-13")
+    closes = pd.DataFrame({"AAA": [20.74, 16.21], "BBB": [100.0, 101.0]}, index=days)
+    # phantom -22% print, second source disagrees -> refuse
+    monkeypatch.setattr(nav, "_nasdaq_close", lambda t, d: 20.90)
+    with pytest.raises(RuntimeError, match="suspect print"):
+        nav.validate_last_closes(closes)
+    # real crash confirmed by the second source -> accepted
+    monkeypatch.setattr(nav, "_nasdaq_close", lambda t, d: 16.20)
+    nav.validate_last_closes(closes)
+    # cross-check down -> proceed on Yahoo alone (logged), never crash
+    monkeypatch.setattr(nav, "_nasdaq_close", lambda t, d: None)
+    nav.validate_last_closes(closes)
