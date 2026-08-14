@@ -1,0 +1,2 @@
+ticker,name,structure,contracts,entry_side,entry_price,cash_flow,position_risk,position_max_gain,entry_by,earnings_date,session,expiry,spot,edge,score,implied_move_mid,fair_move,n_events
+CRM,Salesforce,iron fly,3,credit,345.0000000000001,1035.0000000000005,464.99999999999966,1035.0000000000005,2026-08-26,2026-08-26,AMC,2026-08-28,196.2100067138672,0.5312303235676173,2.3899795510189867,0.08766117634908775,0.05724885080961939,12
