@@ -1,10 +1,10 @@
-# Options pre-registration scorecard — through 2026-08-13
+# Options pre-registration scorecard — through 2026-08-14
 
-428 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+430 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
-- realized |move| landed inside the frozen implied move in **84%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.43** · median realized/fair: **0.79**
+- realized |move| landed inside the frozen implied move in **83%** of events (vol premium says this should exceed ~50%)
+- median realized/implied: **0.44** · median realized/fair: **0.79**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
 - **4/19 winners · net P&L $-2,473** (gross credits/debits $9,498)
@@ -39,19 +39,20 @@ make money shorted and cheap events should make money bought.
 
 | Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
 |---|---|---|---|---|
-| cheap (model: long vol) | 6 | $-385 | $-572 | $-572 |
+| cheap (model: long vol) | 7 | $-842 | $-315 | $-315 |
 | neutral (model: no trade) | 24 | $6,865 | $-11,202 | $0 |
-| rich (model: short vol) | 168 | $35,965 | $-84,500 | $35,965 |
+| rich (model: short vol) | 173 | $26,410 | $-77,881 | $26,410 |
 
-- **Model-aligned total: $35,393** vs always-short-everything $42,446 (n=198)
+- **Model-aligned total: $26,095** vs always-short-everything $32,434 (n=204)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $2,457 | $1,568 |
 | 30 | $-9,372 | $-5,710 |
-| 31 | $19,300 | $18,379 |
-| 32 | $30,061 | $21,157 |
+| 31 | $23,294 | $22,373 |
+| 32 | $29,604 | $21,414 |
+| 33 | $-13,549 | $-13,549 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
 _delayed quotes flatter both sides. Season-end review adds calibration bands,_
