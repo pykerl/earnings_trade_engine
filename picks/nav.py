@@ -275,15 +275,29 @@ def append_only_write(nav: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def run() -> pd.DataFrame:
-    config.ensure_dirs()
-    rules = load_rules()
+def _run_once(rules: dict) -> pd.DataFrame:
     closes, dividends, splits = fetch_market_data(rules)
     validate_last_closes(closes)
     inception = load_or_freeze_inception(rules, closes)
     positions = compute_positions(inception, closes, dividends, splits)
     positions.to_parquet(POSITIONS_PARQUET, index=False)
-    nav = append_only_write(compute_nav(positions))
+    return append_only_write(compute_nav(positions))
+
+
+def run() -> pd.DataFrame:
+    import time
+
+    config.ensure_dirs()
+    rules = load_rules()
+    try:
+        nav = _run_once(rules)
+    except (AssertionError, RuntimeError) as exc:
+        # Yahoo's feed intermittently returns corrupt history mid-download
+        # (three incidents in two weeks); one clean refetch usually clears it,
+        # and every guard re-runs on the retry
+        log.warning("picks NAV rejected a suspect fetch (%s) — retrying once in 30s", exc)
+        time.sleep(30)
+        nav = _run_once(rules)
     latest = nav[nav["date"] == nav["date"].max()]
     log.info(
         "picks NAV through %s: %s",
