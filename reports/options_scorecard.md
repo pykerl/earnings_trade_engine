@@ -1,19 +1,19 @@
-# Options pre-registration scorecard — through 2026-08-17
+# Options pre-registration scorecard — through 2026-08-18
 
 430 resolved events; 19 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
-- realized |move| landed inside the frozen implied move in **84%** of events (vol premium says this should exceed ~50%)
-- median realized/implied: **0.44** · median realized/fair: **0.80**
+- realized |move| landed inside the frozen implied move in **82%** of events (vol premium says this should exceed ~50%)
+- median realized/implied: **0.45** · median realized/fair: **0.81**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
-- **4/19 winners · net P&L $-2,473** (gross credits/debits $9,498)
+- **4/19 winners · net P&L $-2,573** (gross credits/debits $9,498)
 
 | Ticker | Event | Structure | Implied | Realized | P&L |
 |---|---|---|---|---|---|
-| XOM | 2026-07-31 BMO | iron fly | ±4.6% | -1.0% | $162 |
 | OXY | 2026-08-05 AMC | iron fly | ±7.2% | +4.1% | $87 |
 | BAC | 2026-07-14 BMO | iron fly | ±3.7% | +1.9% | $66 |
+| XOM | 2026-07-31 BMO | iron fly | ±4.6% | -1.0% | $62 |
 | F | 2026-07-28 AMC | iron fly | ±7.6% | +2.1% | $41 |
 | BA | 2026-07-28 BMO | iron fly | ±6.8% | +4.8% | $-89 |
 | SMCI | 2026-08-04 AMC | iron fly | ±19.8% | -4.3% | $-104 |
@@ -41,17 +41,17 @@ make money shorted and cheap events should make money bought.
 |---|---|---|---|---|
 | cheap (model: long vol) | 7 | $-842 | $-315 | $-315 |
 | neutral (model: no trade) | 24 | $7,105 | $-11,442 | $0 |
-| rich (model: short vol) | 175 | $22,667 | $-75,278 | $22,667 |
+| rich (model: short vol) | 172 | $28,089 | $-79,370 | $28,089 |
 
-- **Model-aligned total: $22,352** vs always-short-everything $28,930 (n=206)
+- **Model-aligned total: $27,774** vs always-short-everything $34,352 (n=203)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $2,510 | $1,621 |
-| 30 | $-9,259 | $-5,667 |
-| 31 | $19,434 | $18,513 |
-| 32 | $29,794 | $21,434 |
+| 30 | $-9,262 | $-5,671 |
+| 31 | $24,938 | $24,017 |
+| 32 | $29,716 | $21,356 |
 | 33 | $-13,549 | $-13,549 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
