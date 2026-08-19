@@ -135,3 +135,28 @@ def test_big_move_cross_check(monkeypatch):
     # cross-check down -> proceed on Yahoo alone (logged), never crash
     monkeypatch.setattr(nav, "_nasdaq_close", lambda t, d: None)
     nav.validate_last_closes(closes)
+
+
+def test_completeness_gate_rejects_partial_history():
+    days = pd.bdate_range("2026-07-20", "2026-07-23")
+    closes = pd.DataFrame({"AAA": [100.0, np.nan, np.nan, 104.0],
+                           "SPY": [500.0, 501.0, 502.0, 503.0]}, index=days)
+    with pytest.raises(RuntimeError, match="incomplete price history"):
+        nav.validate_completeness(closes, RULES)
+    closes["AAA"] = [100.0, 101.0, 102.0, 104.0]
+    nav.validate_completeness(closes, RULES)  # complete -> fine
+
+
+def test_patch_history_from_frozen(tmp_path, monkeypatch):
+    monkeypatch.setattr(nav, "POSITIONS_PARQUET", tmp_path / "pos.parquet")
+    days = pd.bdate_range("2026-07-20", "2026-07-22")
+    pd.DataFrame({
+        "date": [days[1].date()], "portfolio": ["John"], "ticker": ["AAA"],
+        "shares": [50.0], "close": [101.0], "value": [5050.0], "cash": [0.0],
+        "entry_close": [100.0],
+    }).to_parquet(tmp_path / "pos.parquet")
+    closes = pd.DataFrame({"AAA": [100.0, np.nan, 102.0],
+                           "SPY": [500.0, 501.0, 502.0]}, index=days)
+    out = nav.patch_history_from_frozen(closes)
+    assert out.loc[days[1], "AAA"] == 101.0   # hole filled from frozen record
+    assert out.loc[days[2], "AAA"] == 102.0   # fresh data untouched

@@ -98,6 +98,55 @@ def _nasdaq_close(ticker: str, day) -> float | None:
         return None
 
 
+def patch_history_from_frozen(closes: pd.DataFrame) -> pd.DataFrame:
+    """Fill vendor holes in PAST dates from the frozen positions record.
+
+    Yahoo has served histories with specific old days missing (BBWI/DSP lost
+    Jul 21/22/31 for a while). Those closes are already part of the immutable
+    first-write record, which outranks the vendor on history — so patch them
+    back in, loudly. Only dates already frozen can ever be patched; a hole on
+    a new date stays a hole and fails the completeness gate."""
+    if not POSITIONS_PARQUET.exists():
+        return closes
+    frozen = pd.read_parquet(POSITIONS_PARQUET).set_index(["date", "ticker"])["close"]
+    for (d, t), px in frozen.items():
+        ts = pd.Timestamp(d)
+        if ts in closes.index and t in closes.columns and pd.isna(closes.loc[ts, t]):
+            closes.loc[ts, t] = float(px)
+            log.warning("patched %s %s close %.2f from the frozen record (vendor hole)",
+                        t, d, px)
+    # second tier: holes on past dates with no frozen copy (a corrupt run can
+    # overwrite the positions cache) fill from the independent Nasdaq source
+    last_ts = closes.index.max()
+    for t in closes.columns:
+        for ts in closes.index[closes[t].isna()]:
+            if ts == last_ts:
+                continue  # never patch today's not-yet-frozen close
+            ref = _nasdaq_close(t, ts.date())
+            if ref is not None:
+                closes.loc[ts, t] = ref
+                log.warning("patched %s %s close %.2f from nasdaq (vendor hole, "
+                            "no frozen copy)", t, ts.date(), ref)
+    return closes
+
+
+def validate_completeness(closes: pd.DataFrame, rules: dict) -> None:
+    """Every name must have a close on every market trading day since
+    inception. Yahoo intermittently returns partial histories (a fetch came
+    back with DSP entirely NaN, silently shorting John a whole position);
+    a partial series must never reach NAV computation. SPY defines which
+    days the market actually traded."""
+    start = pd.Timestamp(rules["rules"]["inception_earliest"])
+    days = closes.index[(closes.index >= start) & closes["SPY"].notna()]
+    holes = {t: int(closes.loc[days, t].isna().sum()) for t in closes.columns}
+    bad = {t: n for t, n in holes.items() if n > 0}
+    if bad:
+        raise RuntimeError(
+            f"vendor returned incomplete price history ({bad} missing days) — "
+            "refusing to compute NAV from a partial fetch"
+        )
+
+
 def validate_last_closes(closes: pd.DataFrame) -> None:
     """Cross-check big single-day moves before they can freeze into NAV.
 
@@ -277,6 +326,8 @@ def append_only_write(nav: pd.DataFrame) -> pd.DataFrame:
 
 def _run_once(rules: dict) -> pd.DataFrame:
     closes, dividends, splits = fetch_market_data(rules)
+    closes = patch_history_from_frozen(closes)
+    validate_completeness(closes, rules)
     validate_last_closes(closes)
     inception = load_or_freeze_inception(rules, closes)
     positions = compute_positions(inception, closes, dividends, splits)
@@ -289,15 +340,17 @@ def run() -> pd.DataFrame:
 
     config.ensure_dirs()
     rules = load_rules()
-    try:
-        nav = _run_once(rules)
-    except (AssertionError, RuntimeError) as exc:
-        # Yahoo's feed intermittently returns corrupt history mid-download
-        # (three incidents in two weeks); one clean refetch usually clears it,
-        # and every guard re-runs on the retry
-        log.warning("picks NAV rejected a suspect fetch (%s) — retrying once in 30s", exc)
-        time.sleep(30)
-        nav = _run_once(rules)
+    nav = None
+    for attempt in range(4):  # Yahoo's flaky spells can outlast a single retry
+        try:
+            nav = _run_once(rules)
+            break
+        except (AssertionError, RuntimeError) as exc:
+            if attempt == 3:
+                raise
+            log.warning("picks NAV rejected a suspect fetch (attempt %d/4: %s) — "
+                        "retrying in 60s", attempt + 1, exc)
+            time.sleep(60)
     latest = nav[nav["date"] == nav["date"].max()]
     log.info(
         "picks NAV through %s: %s",
