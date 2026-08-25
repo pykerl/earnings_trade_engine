@@ -37,7 +37,8 @@ POSITIONS_PARQUET = config.DATA_DIR / "picks_positions.parquet"
 ACTIONS_CSV = config.DATA_DIR / "picks_actions.csv"
 
 NAV_TOL = 0.01          # re-derivation noise we don't even mention
-RESTATEMENT_TOL = 1.00  # vendor restatements up to $1 of NAV: log + keep frozen rows
+RESTATEMENT_TOL_PCT = 0.005  # sub-0.5% drift = routine vendor restatement: log + keep
+                             # frozen rows. The phantom-print incidents were 4-20%.
 
 
 def load_rules(path=PICKS_YAML) -> dict:
@@ -304,14 +305,17 @@ def append_only_write(nav: pd.DataFrame) -> pd.DataFrame:
     merged = prior.merge(nav, on=["date", "portfolio"], suffixes=("_old", "_new"), how="inner")
     if len(merged):
         drift = float((merged["nav_old"] - merged["nav_new"]).abs().max())
-        assert drift <= RESTATEMENT_TOL, (
-            f"historical NAV re-derives ${drift:.2f} different — beyond any plausible "
-            "vendor restatement; refusing to write (check splits/dividends/ticker data)"
+        drift_pct = float(((merged["nav_old"] - merged["nav_new"]).abs()
+                           / merged["nav_old"]).max())
+        assert drift_pct <= RESTATEMENT_TOL_PCT, (
+            f"historical NAV re-derives ${drift:.2f} ({drift_pct:.1%}) different — "
+            "beyond any plausible vendor restatement; refusing to write "
+            "(check splits/dividends/ticker data)"
         )
         if drift > NAV_TOL:
             log.warning(
-                "vendor restated history (NAV re-derives up to $%.2f different) — "
-                "frozen rows kept as first written", drift,
+                "vendor restated history (NAV re-derives up to $%.2f / %.2f%% "
+                "different) — frozen rows kept as first written", drift, 100 * drift_pct,
             )
     prior_keys = set(zip(prior["date"], prior["portfolio"]))
     new_rows = nav[[(d, p) not in prior_keys
