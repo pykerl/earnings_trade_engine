@@ -328,8 +328,25 @@ def append_only_write(nav: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def _drop_unfinished_today(*frames: pd.DataFrame) -> tuple[pd.DataFrame, ...]:
+    """The official NAV is close-only. A run while the market is still open
+    gets today's in-progress bar from the vendor — that is the intraday
+    overlay's job, never the frozen record's. Drop today's row before 4pm ET."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime.now(ZoneInfo("America/New_York"))
+    first = frames[0]
+    if len(first) and first.index[-1].date() == now.date() and now.hour < 16:
+        log.info("market still open (%s ET) — today's bar goes to the intraday "
+                 "overlay, not the frozen NAV", now.strftime("%H:%M"))
+        return tuple(f.iloc[:-1] for f in frames)
+    return frames
+
+
 def _run_once(rules: dict) -> pd.DataFrame:
     closes, dividends, splits = fetch_market_data(rules)
+    closes, dividends, splits = _drop_unfinished_today(closes, dividends, splits)
     closes = patch_history_from_frozen(closes)
     validate_completeness(closes, rules)
     validate_last_closes(closes)

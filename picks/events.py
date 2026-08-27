@@ -208,12 +208,17 @@ def run(today: date | None = None) -> pd.DataFrame:
                          ignore_index=True)
     if len(past):
         past["earnings_date"] = pd.to_datetime(past["earnings_date"]).dt.date
-        past = past[past["earnings_date"] <= today_].set_index("ticker")
+        past = past[~past.duplicated("ticker", keep="first")].set_index("ticker")
         for i, r in events.iterrows():
             if pd.isna(r["earnings_date"]) and r["ticker"] in past.index:
                 p = past.loc[r["ticker"]]
+                # a past date is history ("reported"); a FUTURE date carried
+                # through a source outage keeps its prior status so the next
+                # healthy resolve can still confirm or conflict it — dropping
+                # it would silently skip that name's T-1 freeze
+                status = "reported" if p["earnings_date"] <= today_ else p["status"]
                 events.loc[i, ["earnings_date", "session", "status", "sources"]] = [
-                    p["earnings_date"], p["session"], "reported", p["sources"]]
+                    p["earnings_date"], p["session"], status, p["sources"]]
     if events["earnings_date"].isna().all() and PICKS_EVENTS_PARQUET.exists():
         prior = pd.read_parquet(PICKS_EVENTS_PARQUET)
         if prior["earnings_date"].notna().any():
