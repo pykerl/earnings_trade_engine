@@ -1,16 +1,17 @@
-# Options pre-registration scorecard — through 2026-08-27
+# Options pre-registration scorecard — through 2026-08-28
 
-452 resolved events; 31 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+460 resolved events; 34 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
 - realized |move| landed inside the frozen implied move in **83%** of events (vol premium says this should exceed ~50%)
 - median realized/implied: **0.46** · median realized/fair: **0.81**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
-- **8/31 winners · net P&L $-3,317** (gross credits/debits $14,363)
+- **10/34 winners · net P&L $-3,040** (gross credits/debits $16,223)
 
 | Ticker | Event | Structure | Implied | Realized | P&L |
 |---|---|---|---|---|---|
+| MRVL | 2026-08-27 AMC | iron fly | ±15.1% | -10.3% | $427 |
 | OKE | 2026-08-03 AMC | iron fly | ±7.7% | -0.7% | $193 |
 | Q | 2026-08-04 BMO | iron fly | ±21.2% | +6.3% | $178 |
 | OXY | 2026-08-05 AMC | iron fly | ±7.2% | +4.1% | $87 |
@@ -19,17 +20,19 @@
 | BAC | 2026-07-14 BMO | iron fly | ±3.7% | +1.9% | $66 |
 | XOM | 2026-07-31 BMO | iron fly | ±4.6% | -1.0% | $62 |
 | F | 2026-07-28 AMC | iron fly | ±7.6% | +2.1% | $41 |
+| NVDA | 2026-08-26 AMC | iron fly | ±7.3% | +8.7% | $35 |
 | O | 2026-08-05 AMC | iron fly | ±4.1% | -0.5% | $-85 |
 | BA | 2026-07-28 BMO | iron fly | ±6.8% | +4.8% | $-89 |
 | BLDR | 2026-07-30 BMO | iron fly | ±16.4% | -2.6% | $-99 |
 | SMCI | 2026-08-04 AMC | iron fly | ±19.8% | -4.3% | $-104 |
 | T | 2026-07-22 BMO | iron fly | ±4.9% | +3.5% | $-109 |
-| CMG | 2026-07-29 AMC | iron fly | ±10.1% | +12.5% | $-120 |
 | COIN | 2026-07-30 AMC | iron fly | ±13.2% | -10.6% | $-120 |
+| CMG | 2026-07-29 AMC | iron fly | ±10.1% | +12.5% | $-120 |
 | ADM | 2026-08-04 BMO | iron fly | ±8.5% | +2.3% | $-130 |
 | EXE | 2026-07-28 AMC | iron fly | ±8.3% | +4.5% | $-160 |
 | LYB | 2026-07-31 BMO | iron fly | ±11.8% | +2.7% | $-165 |
 | MNST | 2026-08-06 AMC | iron fly | ±8.0% | +91.9% | $-170 |
+| CRM | 2026-08-26 AMC | iron fly | ±9.6% | +22.6% | $-185 |
 | SWKS | 2026-07-28 AMC | iron fly | ±17.5% | -5.4% | $-209 |
 | C | 2026-07-14 BMO | iron fly | ±4.5% | -5.3% | $-211 |
 | PLTR | 2026-08-03 AMC | iron fly | ±13.4% | +29.5% | $-220 |
@@ -52,20 +55,21 @@ make money shorted and cheap events should make money bought.
 | Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
 |---|---|---|---|---|
 | cheap (model: long vol) | 9 | $-1,140 | $-447 | $-447 |
-| neutral (model: no trade) | 29 | $-696 | $-5,366 | $0 |
-| rich (model: short vol) | 404 | $105,088 | $-256,324 | $105,088 |
+| neutral (model: no trade) | 32 | $3,885 | $-11,022 | $0 |
+| rich (model: short vol) | 415 | $113,014 | $-269,944 | $113,014 |
 
-- **Model-aligned total: $104,641** vs always-short-everything $103,252 (n=442)
+- **Model-aligned total: $112,567** vs always-short-everything $115,760 (n=456)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $2,386 | $1,497 |
 | 30 | $12,664 | $16,180 |
-| 31 | $73,052 | $75,386 |
-| 32 | $25,191 | $20,461 |
+| 31 | $73,009 | $75,343 |
+| 32 | $25,235 | $20,506 |
 | 33 | $-13,130 | $-13,102 |
 | 34 | $3,090 | $4,219 |
+| 35 | $12,506 | $7,925 |
 
 _Directional evidence, not a verdict (plan §4): hypothetical fills at frozen_
 _delayed quotes flatter both sides. Season-end review adds calibration bands,_
