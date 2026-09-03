@@ -28,6 +28,7 @@ from log import predictions
 log = logging.getLogger("ete.picks_events")
 
 PICKS_EVENTS_PARQUET = config.DATA_DIR / "picks_events.parquet"
+PICKS_EVENTS_CSV = config.LOG_DIR / "picks_events.csv"  # committed copy: survives container wipes
 PICKS_PREDICTIONS_CSV = config.LOG_DIR / "picks_predictions.csv"
 
 FIELDS = [
@@ -195,6 +196,7 @@ def run(today: date | None = None) -> pd.DataFrame:
     # uncommitted cache and dies with the container)
     past = (
         pd.read_parquet(PICKS_EVENTS_PARQUET) if PICKS_EVENTS_PARQUET.exists()
+        else pd.read_csv(PICKS_EVENTS_CSV) if PICKS_EVENTS_CSV.exists()
         else pd.DataFrame(columns=["ticker", "portfolio", "earnings_date",
                                    "session", "status", "sources"])
     )
@@ -230,6 +232,7 @@ def run(today: date | None = None) -> pd.DataFrame:
                 "source outage; keeping the previous picks_events.parquet"
             )
     events.to_parquet(PICKS_EVENTS_PARQUET, index=False)
+    events.to_csv(PICKS_EVENTS_CSV, index=False)  # committed twin — data/ dies with containers
     t1_freeze(events, today=today)
     return events
 
