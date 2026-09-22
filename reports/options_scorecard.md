@@ -1,4 +1,4 @@
-# Options pre-registration scorecard — through 2026-09-20
+# Options pre-registration scorecard — through 2026-09-21
 
 480 resolved events; 35 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
@@ -56,22 +56,22 @@ make money shorted and cheap events should make money bought.
 | Model bucket | n | short-straddle P&L | long-straddle P&L | model-aligned P&L |
 |---|---|---|---|---|
 | cheap (model: long vol) | 8 | $-920 | $-282 | $-282 |
-| neutral (model: no trade) | 37 | $5,876 | $-14,299 | $0 |
-| rich (model: short vol) | 434 | $98,440 | $-263,065 | $98,440 |
+| neutral (model: no trade) | 37 | $5,792 | $-14,215 | $0 |
+| rich (model: short vol) | 433 | $98,168 | $-262,493 | $98,168 |
 
-- **Model-aligned total: $98,158** vs always-short-everything $103,396 (n=479)
+- **Model-aligned total: $97,886** vs always-short-everything $103,040 (n=478)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $3,599 | $2,592 |
-| 30 | $13,973 | $17,489 |
-| 31 | $66,466 | $68,672 |
-| 32 | $27,058 | $21,880 |
+| 30 | $14,012 | $17,528 |
+| 31 | $66,178 | $68,384 |
+| 32 | $27,016 | $21,857 |
 | 33 | $-13,342 | $-13,314 |
 | 34 | $2,879 | $3,909 |
 | 35 | $14,607 | $10,112 |
-| 36 | $1,005 | $174 |
+| 36 | $940 | $174 |
 | 37 | $-11,845 | $-12,352 |
 | 38 | $-1,006 | $-1,006 |
 
