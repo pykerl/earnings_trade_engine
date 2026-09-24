@@ -142,13 +142,17 @@ def scoreboard(
 def race_chart(nav: pd.DataFrame, events: pd.DataFrame | None, rules: dict) -> str:
     W, H, ML, MR, MT, MB = 880, 320, 56, 10, 14, 34
     start = pd.Timestamp(rules["rules"]["inception_earliest"])
-    end = pd.Timestamp(rules["rules"]["end_date"])
+    season_end = pd.Timestamp(rules["rules"]["end_date"])
+    end = season_end
     if events is not None and events["earnings_date"].notna().any():
         end = max(end, pd.to_datetime(events["earnings_date"]).max())
-    span = max((end - start).days, 1)
 
     navs = nav.copy()
     navs["ts"] = pd.to_datetime(navs["date"])
+    # extended tracking: the domain grows with the data so post-season points
+    # aren't clipped off the right edge
+    end = max(end, navs["ts"].max())
+    span = max((end - start).days, 1)
     ys = navs["nav"].tolist() + [10_000.0]
     ylo, yhi = min(ys) * 0.985, max(ys) * 1.015
 
@@ -180,6 +184,13 @@ def race_chart(nav: pd.DataFrame, events: pd.DataFrame | None, rules: dict) -> s
         parts.append(f'<line class="grid" x1="{gx:.1f}" y1="{MT}" x2="{gx:.1f}" y2="{H - MB}" />')
         parts.append(f'<text class="lbl" x="{gx:.1f}" y="{H - MB + 14}" text-anchor="middle">'
                      f'{m.strftime("%b")}</text>')
+    # season finish line: everything right of this is extended tracking
+    if end > season_end:
+        fx = x(season_end)
+        parts.append(f'<line x1="{fx:.1f}" y1="{MT}" x2="{fx:.1f}" y2="{H - MB}" '
+                     'stroke="var(--muted, #888)" stroke-width="1" stroke-dasharray="2 3" />')
+        parts.append(f'<text class="lbl" x="{fx + 4:.1f}" y="{MT + 10}" '
+                     'text-anchor="start">final ▸ extended</text>')
     # lines
     for p, grp in navs.groupby("portfolio"):
         grp = grp.sort_values("ts")
