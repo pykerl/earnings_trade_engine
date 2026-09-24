@@ -1,9 +1,9 @@
-# Options pre-registration scorecard — through 2026-09-21
+# Options pre-registration scorecard — through 2026-09-24
 
-480 resolved events; 35 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
+484 resolved events; 35 carried registered structures (entries frozen at registration prices — buy at ask / sell at bid).
 
 ## Calibration (all resolved events)
-- realized |move| landed inside the frozen implied move in **83%** of events (vol premium says this should exceed ~50%)
+- realized |move| landed inside the frozen implied move in **82%** of events (vol premium says this should exceed ~50%)
 - median realized/implied: **0.45** · median realized/fair: **0.79**
 
 ## Structure P&L (expiry settlement, 1 contract per registration)
@@ -57,16 +57,16 @@ make money shorted and cheap events should make money bought.
 |---|---|---|---|---|
 | cheap (model: long vol) | 8 | $-920 | $-282 | $-282 |
 | neutral (model: no trade) | 37 | $5,792 | $-14,215 | $0 |
-| rich (model: short vol) | 433 | $98,168 | $-262,493 | $98,168 |
+| rich (model: short vol) | 432 | $109,645 | $-273,380 | $109,645 |
 
-- **Model-aligned total: $97,886** vs always-short-everything $103,040 (n=478)
+- **Model-aligned total: $109,363** vs always-short-everything $114,518 (n=477)
 - Screened events are included: the screen protects fills, not signal scoring.
 
 | ISO week | short-all P&L | model-aligned P&L |
 |---|---|---|
 | 29 | $3,599 | $2,592 |
-| 30 | $14,012 | $17,528 |
-| 31 | $66,178 | $68,384 |
+| 30 | $25,533 | $29,049 |
+| 31 | $66,135 | $68,341 |
 | 32 | $27,016 | $21,857 |
 | 33 | $-13,342 | $-13,314 |
 | 34 | $2,879 | $3,909 |
